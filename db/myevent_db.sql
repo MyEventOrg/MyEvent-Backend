@@ -1,218 +1,249 @@
--- Crear la base de datos en SQL Server
-IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = 'MyEvent')
-BEGIN
-    CREATE DATABASE MyEvent;
-END
-GO
-
-USE MyEvent;
-GO
-
 CREATE TABLE Usuario (
-    idUsuario INT PRIMARY KEY IDENTITY(1,1),
-    nombreCompleto VARCHAR(100) NOT NULL,
-    correo VARCHAR(100) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL, 
-    fechaRegistro DATETIME DEFAULT GETDATE(),
-    activo BIT DEFAULT 1
+    usuario_id     INT AUTO_INCREMENT PRIMARY KEY,
+    nombreCompleto VARCHAR(40) NOT NULL,
+    correo         VARCHAR(40) NOT NULL UNIQUE,
+    contrasena     VARCHAR(200) NOT NULL, -- guarda hash, no texto plano
+    fecha_registro DATE NOT NULL,
+    activo         BOOL NOT NULL DEFAULT TRUE,
+    rol            VARCHAR(5) NOT NULL,   -- "admin" / "user"
+    apodo          VARCHAR(12)
 );
 
-CREATE TABLE Ubicacion (
-    idUbicacion INT PRIMARY KEY IDENTITY(1,1),
-    direccion VARCHAR(255) NOT NULL,       
-    ciudad VARCHAR(100) NULL,              
-    pais VARCHAR(100) NULL, 
-    distrito VARCHAR(100) NULL,
-    latitud DECIMAL(9,6) NULL,             
-    longitud DECIMAL(9,6) NULL,             
-    urlMapa AS 
-        ('https://www.google.com/maps/search/?api=1&query=' 
-         + CAST(latitud AS VARCHAR(20)) + ',' + CAST(longitud AS VARCHAR(20))) 
-        PERSISTED  
+CREATE TABLE Categoria (
+    categoria_id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre       VARCHAR(40) NOT NULL
 );
 
 CREATE TABLE Evento (
-    idEvento INT PRIMARY KEY IDENTITY(1,1),
-    titulo VARCHAR(150) NOT NULL,
-    descripcion VARCHAR(MAX),
-    fechaHora DATETIME DEFAULT GETDATE(),
-    imagen VARCHAR(255),
-    estado BIT DEFAULT 1,     
-    tipo VARCHAR(20) CHECK (tipo IN ('Publico','Privado')),
-    idOrganizador INT NOT NULL,
-    idUbicacion INT NULL,
-    FOREIGN KEY (idOrganizador) REFERENCES Usuario(idUsuario),
-    FOREIGN KEY (idUbicacion) REFERENCES Ubicacion(idUbicacion)
+    evento_id          INT AUTO_INCREMENT PRIMARY KEY,
+	titulo			   VARCHAR(60) NOT NULL,
+    descripcion_corta  VARCHAR(200) NOT NULL,
+    descripcion_larga  text,
+    fecha_evento       DATE NOT NULL,
+    hora               VARCHAR(10) NOT NULL,
+    url_imagen         VARCHAR(200),
+    tipo_evento        VARCHAR(7) NOT NULL, -- "publico"/"privado"
+    ubicacion          VARCHAR(200),
+    latitud            VARCHAR(40),
+    longitud           VARCHAR(40),
+    ciudad             VARCHAR(20),
+    distrito           VARCHAR(20),
+    url_direccion      VARCHAR(200),
+    url_recurso        VARCHAR(200),
+    estado_evento      BOOL NOT NULL DEFAULT TRUE,
+    categoria_id       INT,
+    FOREIGN KEY (categoria_id) REFERENCES Categoria(categoria_id)
 );
-
 CREATE TABLE Participacion (
-    idParticipacion INT PRIMARY KEY IDENTITY(1,1),
-    idEvento INT NOT NULL,
-    idUsuario INT NOT NULL,
-    asistencia BIT DEFAULT 1,
-    fechaRegistro DATETIME DEFAULT GETDATE(),
-    UNIQUE (idEvento, idUsuario),
-    FOREIGN KEY (idEvento) REFERENCES Evento(idEvento),
-    FOREIGN KEY (idUsuario) REFERENCES Usuario(idUsuario)
+    participacion_id INT AUTO_INCREMENT PRIMARY KEY,
+    fecha_registro   DATE NOT NULL,
+    fecha_actualizada DATE,
+    rol_evento       VARCHAR(20) NOT NULL, -- "organizador"/"coorganizador"/"asistente"
+    usuario_id       INT NOT NULL,
+    evento_id        INT NOT NULL,
+    UNIQUE (usuario_id, evento_id),
+    FOREIGN KEY (usuario_id) REFERENCES Usuario(usuario_id),
+    FOREIGN KEY (evento_id)  REFERENCES Evento(evento_id)
 );
 
 CREATE TABLE Invitacion (
-    idInvitacion INT PRIMARY KEY IDENTITY(1,1),
-    estado VARCHAR(20) DEFAULT 'Pendiente', 
-    confirmacion BIT DEFAULT 0,
-    idEvento INT NOT NULL,
-    idUsuario INT NOT NULL,
-    fechaInvitacion DATETIME DEFAULT GETDATE(),
-    UNIQUE (idEvento, idUsuario),
-    FOREIGN KEY (idEvento) REFERENCES Evento(idEvento),
-    FOREIGN KEY (idUsuario) REFERENCES Usuario(idUsuario)
+    invitacion_id    INT AUTO_INCREMENT PRIMARY KEY,
+    estado           ENUM('pendiente','aceptada','rechazada') DEFAULT 'pendiente',
+    mensaje          VARCHAR(200),
+    fecha_invitacion DATE NOT NULL,
+    organizador_id   INT NOT NULL,
+    invitado_id      INT NOT NULL,
+    evento_id        INT NOT NULL,
+    FOREIGN KEY (organizador_id) REFERENCES Usuario(usuario_id),
+    FOREIGN KEY (invitado_id)    REFERENCES Usuario(usuario_id),
+    FOREIGN KEY (evento_id)      REFERENCES Evento(evento_id)
 );
 
-CREATE TABLE Notificacion (
-    idNotificacion INT PRIMARY KEY IDENTITY(1,1),
-    mensaje VARCHAR(MAX) NOT NULL,
-    fechaHora DATETIME DEFAULT GETDATE(),
-    leida BIT DEFAULT 0,
-    emisor INT NOT NULL,         
-    receptor INT NOT NULL,       
-    idEvento INT NULL,                
-    idInvitacion INT NULL,           
-    FOREIGN KEY (emisor) REFERENCES Usuario(idUsuario),
-    FOREIGN KEY (receptor) REFERENCES Usuario(idUsuario),
-    FOREIGN KEY (idEvento) REFERENCES Evento(idEvento),
-    FOREIGN KEY (idInvitacion) REFERENCES Invitacion(idInvitacion)
+CREATE TABLE EventosGuardado (
+    eventosguardado_id INT AUTO_INCREMENT PRIMARY KEY,
+    usuario_id INT NOT NULL,
+    evento_id  INT NOT NULL,
+    UNIQUE (usuario_id, evento_id),
+    FOREIGN KEY (usuario_id) REFERENCES Usuario(usuario_id),
+    FOREIGN KEY (evento_id)  REFERENCES Evento(evento_id)
 );
 
-CREATE TABLE Favorito (
-    idFavorito INT PRIMARY KEY IDENTITY(1,1),
-    idEvento INT NOT NULL,
-    idUsuario INT NOT NULL,
-    fechaGuardado DATETIME DEFAULT GETDATE(),
-    UNIQUE (idEvento, idUsuario),
-    FOREIGN KEY (idEvento) REFERENCES Evento(idEvento),
-    FOREIGN KEY (idUsuario) REFERENCES Usuario(idUsuario)
+CREATE TABLE ComentarioEvento (
+    comentarioevento_id INT AUTO_INCREMENT PRIMARY KEY,
+    mensaje    VARCHAR(200) NOT NULL,
+    likes      INT DEFAULT 0,
+    dislikes   INT DEFAULT 0,
+    usuario_id INT NOT NULL,
+    evento_id  INT NOT NULL,
+    FOREIGN KEY (usuario_id) REFERENCES Usuario(usuario_id),
+    FOREIGN KEY (evento_id)  REFERENCES Evento(evento_id)
 );
 
--- Insertar usuarios
-INSERT INTO Usuario (nombreCompleto, correo, password, activo)
+INSERT INTO Usuario (nombreCompleto, correo, contrasena, fecha_registro, activo, rol, apodo)
 VALUES 
- ('Carlos P�rez', 'carlos@example.com', '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92', 1),
- ('Mar�a G�mez',  'maria@example.com',  '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8', 1),
- ('Camila Soto',  'camila@example.com', '2c9341ca4cf3d87b9e4f92595f2a0d5aa9cce7a16ad2d2f6c6b1e9b7d7f9f56e', 1);
+('Juan Pérez', 'juanperez@mail.com', 'hash123', '2025-09-01', TRUE, 'user', 'juanito'),
+('María Gómez', 'mariag@mail.com', 'hash456', '2025-09-05', TRUE, 'user', 'mary'),
+('Admin Master', 'admin@mail.com', 'hash789', '2025-09-10', TRUE, 'admin', 'root');
 
- INSERT INTO Usuario (nombreCompleto, correo, password, activo)
- VALUES
- ('Tregear perez',  'tregear@example.com', 'tregearhash', 1);
+INSERT INTO Categoria (nombre) VALUES
+('Conferencia'),
+('Concierto'),
+('Deportivo'),
+('Taller'),
+('Networking'),
+('Seminario'),
+('Webinar'),
+('Curso'),
+('Feria'),
+('Exposición'),
+('Festival'),
+('Reunión'),
+('Congreso'),
+('Lanzamiento'),
+('Charla'),
+('Panel'),
+('Mesa Redonda'),
+('Campamento'),
+('Hackathon'),
+('Competencia'),
+('Clases Magistrales'),
+('Workshop'),
+('Retiro'),
+('Recaudación de Fondos'),
+('Social'),
+('Gastronómico'),
+('Cultural'),
+('Tecnológico'),
+('Cine'),
+('Literario'),
+('Arte'),
+('Danza'),
+('Teatro'),
+('Religioso'),
+('Político'),
+('Ambiental'),
+('Bienestar'),
+('Salud'),
+('Fitness'),
+('Voluntariado'),
+('Aniversario'),
+('Graduación'),
+('Formación Profesional'),
+('Demo Day'),
+('Tour'),
+('Visita Guiada'),
+('Coworking'),
+('Open House'),
+('Startup Pitch');
 
--- Insertar ubicaciones
-INSERT INTO Ubicacion (direccion, ciudad, pais, distrito, latitud, longitud)
+INSERT INTO Evento 
+(titulo, descripcion_corta, descripcion_larga, fecha_evento, hora, url_imagen, 
+ tipo_evento, ubicacion, latitud, longitud, ciudad, distrito, url_direccion, url_recurso, estado_evento, categoria_id)
 VALUES
-('Av. Javier Prado Este 4200, San Borja', 'Lima', 'Per�', 'Los olivos', -12.0987, -77.0012),
-('Calle 50 #40-20', 'Medell�n', 'Colombia', 'La molina', 6.2518, -75.5636),
-('tomas valle 1530', 'Lima', 'Per�', 'Surco', -12.011012071279906, -77.07531262274415);
+('Tech Conference 2025',
+ 'Conferencia sobre innovación y tendencias tecnológicas.',
+ 'Una conferencia internacional que reúne a expertos en inteligencia artificial, blockchain y ciberseguridad para discutir el futuro de la tecnología.',
+ '2025-11-15', '09:00',
+ 'https://example.com/img1.jpg', 'publico',
+ 'Centro de Convenciones de Lima', '-12.0464', '-77.0428',
+ 'Lima', 'San Borja', 'https://maps.google.com/1', 'https://example.com/resource1', TRUE, 1),
 
--- Carlos crea evento p�blico en ubicaci�n 1
-INSERT INTO Evento (titulo, descripcion, imagen, estado, tipo, idOrganizador, idUbicacion)
-VALUES ('event carlos', 'hola soy carlos', 'carlos.png', 1, 'Publico', 1, 1);
+('Rock Fest Lima',
+ 'Festival de música rock con bandas internacionales.',
+ 'Una experiencia única con escenarios múltiples, zona gastronómica y artistas de talla mundial en un evento de 8 horas de duración.',
+ '2025-12-20', '18:00',
+ 'https://example.com/img2.jpg', 'publico',
+ 'Estadio Nacional', '-12.0678', '-77.0332',
+ 'Lima', 'Cercado de Lima', 'https://maps.google.com/2', 'https://example.com/resource2', TRUE, 2),
 
--- Mar�a crea evento privado en ubicaci�n 2
-INSERT INTO Evento (titulo, descripcion, imagen, estado, tipo, idOrganizador, idUbicacion)
-VALUES ('event maria', 'hola soy maria', 'maria.jpg', 1, 'Privado', 2, 2);
+('Carrera 10K Lima',
+ 'Competencia deportiva abierta al público.',
+ 'Evento deportivo anual donde corredores profesionales y amateurs participan en un recorrido de 10 km por el centro de Lima.',
+ '2025-10-05', '07:30',
+ 'https://example.com/img3.jpg', 'publico',
+ 'Parque de la Exposición', '-12.0615', '-77.0375',
+ 'Lima', 'Centro Histórico', 'https://maps.google.com/3', 'https://example.com/resource3', TRUE, 3),
 
--- camila crea otro evento publico en ubic 3
-INSERT INTO Evento (titulo, descripcion, imagen, estado, tipo, idOrganizador, idUbicacion)
-VALUES ('event camila', 'hola soy camila', 'amila.jpg', 1, 'Publico', 3, 3);
+('Taller de Emprendimiento',
+ 'Capacitación práctica para emprendedores jóvenes.',
+ 'Un taller intensivo de 6 horas con expertos en modelos de negocio, pitch de startups y marketing digital.',
+ '2025-09-30', '14:00',
+ 'https://example.com/img4.jpg', 'privado',
+ 'Universidad de Lima', '-12.0840', '-76.9717',
+ 'Lima', 'Surco', 'https://maps.google.com/4', 'https://example.com/resource4', TRUE, 4),
 
--- Carlos se inscribe al evento id = 2 -->>evento de maria
-INSERT INTO Participacion (idUsuario, idEvento)
-VALUES (1, 2);
+('Networking Startup Night',
+ 'Encuentro de emprendedores y profesionales de tecnología.',
+ 'Un espacio para conectar fundadores de startups, inversores y mentores en un ambiente distendido con música y coffee break.',
+ '2025-11-05', '19:00',
+ 'https://example.com/img5.jpg', 'publico',
+ 'WeWork Torre Begonias', '-12.0932', '-77.0314',
+ 'Lima', 'San Isidro', 'https://maps.google.com/5', 'https://example.com/resource5', TRUE, 5),
 
--- tregear se inscribe al evento de carlos
-INSERT INTO Participacion (idUsuario, idEvento)
-VALUES (4, 1);
+('Webinar de Ciberseguridad',
+ 'Seminario virtual sobre seguridad digital.',
+ 'Evento online con especialistas que explicarán las amenazas más comunes, cómo proteger la información y mejores prácticas en entornos empresariales.',
+ '2025-10-22', '16:00',
+ 'https://example.com/img6.jpg', 'publico',
+ 'Evento Online - Zoom', '0', '0',
+ 'Lima', 'Virtual', 'https://zoom.com/webinar123', 'https://example.com/resource6', TRUE, 6),
 
--- Mar�a se inscribe al evento id= 3 ->> evento de camila
-INSERT INTO Participacion (idUsuario, idEvento)
-VALUES (2, 3);
+('Festival Gastronómico Peruano',
+ 'Muestra culinaria con los mejores chefs del país.',
+ 'Degustaciones, clases en vivo, venta de productos locales y exhibiciones de cocina internacional fusionada con gastronomía peruana.',
+ '2025-12-01', '11:00',
+ 'https://example.com/img7.jpg', 'publico',
+ 'Parque de la Amistad', '-12.1440', '-76.9890',
+ 'Lima', 'Surco', 'https://maps.google.com/7', 'https://example.com/resource7', TRUE, 26);
 
--- Camila se inscribe al evento de carlos ->> evento de carlos
-INSERT INTO Participacion (idUsuario, idEvento)
+
+-- Juan crea el evento Tech Conference (organizador)
+INSERT INTO Participacion (fecha_registro, rol_evento, usuario_id, evento_id)
+VALUES ('2025-09-15', 'organizador', 1, 1);
+
+-- María participa como asistente en Tech Conference
+INSERT INTO Participacion (fecha_registro, rol_evento, usuario_id, evento_id)
+VALUES ('2025-09-20', 'asistente', 2, 1);
+
+-- Admin supervisa como coorganizador del Concierto
+INSERT INTO Participacion (fecha_registro, rol_evento, usuario_id, evento_id)
+VALUES ('2025-09-22', 'coorganizador', 3, 2);
+
+-- Juan invita a María al Taller
+INSERT INTO Invitacion (estado, mensaje, fecha_invitacion, organizador_id, invitado_id, evento_id)
+VALUES ('pendiente', 'Hola María, te invito a mi taller.', '2025-09-25', 1, 2, 3);
+
+
+-- María guarda el evento Concierto Rock Fest
+INSERT INTO EventosGuardado (usuario_id, evento_id)
+VALUES (2, 2);
+
+-- Admin guarda Tech Conference
+INSERT INTO EventosGuardado (usuario_id, evento_id)
 VALUES (3, 1);
 
 
--- Carlos invita a Mar�a a su evento
-DECLARE @Inv1 INT;
-INSERT INTO Invitacion (estado, confirmacion, idEvento, idUsuario)
-VALUES ('Pendiente', 0, 1, 2);
-SET @Inv1 = SCOPE_IDENTITY();
+-- María comenta en Tech Conference
+INSERT INTO ComentarioEvento (mensaje, likes, dislikes, usuario_id, evento_id)
+VALUES ('¡Muy interesante el tema de innovación!', 10, 0, 2, 1);
 
-INSERT INTO Notificacion (mensaje, emisor, receptor, idEvento, idInvitacion)
-VALUES ('Carlos te ha invitado a su evento documental', 1, 2, 1, @Inv1);
-
-
--- Mar�a invita a Carlos a su evento
-DECLARE @Inv2 INT;
-INSERT INTO Invitacion (estado, confirmacion, idEvento, idUsuario)
-VALUES ('Pendiente', 0, 2, 1);
-SET @Inv2 = SCOPE_IDENTITY();
-
-INSERT INTO Notificacion (mensaje, emisor, receptor, idEvento, idInvitacion)
-VALUES ('Mar�a te ha invitado a su evento privado', 2, 1, 2, @Inv2);
+-- Juan comenta en Concierto Rock Fest
+INSERT INTO ComentarioEvento (mensaje, likes, dislikes, usuario_id, evento_id)
+VALUES ('Se viene con todo este concierto', 5, 1, 1, 2);
 
 
--- Camila invita a Mar�a a su evento
-DECLARE @Inv3 INT;
-INSERT INTO Invitacion (estado, confirmacion, idEvento, idUsuario)
-VALUES ('Pendiente', 0, 3, 2);
-SET @Inv3 = SCOPE_IDENTITY();
+-- OPCIONALLLL
 
-INSERT INTO Notificacion (mensaje, emisor, receptor, idEvento, idInvitacion)
-VALUES ('Camila te ha invitado a su evento', 3, 2, 3, @Inv3);
-
-
--- Carlos guarda en favoritos el evento de maria
-INSERT INTO Favorito (idUsuario, idEvento)
-VALUES (1, 2);
-
--- Carlos guarda en favoritos el evento de camila
-INSERT INTO Favorito (idUsuario, idEvento)
-VALUES (1, 3);
-
--- Mar�a guarda en favoritos el evento de camila
-INSERT INTO Favorito (idUsuario, idEvento)
-VALUES (2, 3);
-
-SELECT * FROM Usuario;
-SELECT * FROM Ubicacion;
-SELECT * FROM Participacion;
-SELECT * FROM Favorito;
-SELECT * FROM Evento;
-SELECT * FROM Invitacion;
-SELECT * FROM Notificacion;
-
---eventos con su organizador y su ubicacion
-SELECT e.idEvento, e.titulo, e.tipo, e.estado, e.fechaHora, 
-       u.nombreCompleto AS organizador,
-       ub.direccion AS direccionUbicacion, ub.urlMapa
-FROM Evento e
-JOIN Usuario u ON e.idOrganizador = u.idUsuario
-LEFT JOIN Ubicacion ub ON e.idUbicacion = ub.idUbicacion
-ORDER BY e.idEvento;
-
---inscripciones a eventos
-SELECT p.idParticipacion, u.nombreCompleto AS participante, e.titulo AS evento, 
-       p.asistencia, p.fechaRegistro
-FROM Participacion p
-JOIN Usuario u ON p.idUsuario = u.idUsuario
-JOIN Evento e ON p.idEvento = e.idEvento
-ORDER BY p.idParticipacion;
-
---inscripcion a evetno de carlos
-SELECT 
-    p.idParticipacion,
-    u.nombreCompleto AS Participante,
-    p.asistencia,
-    p.fechaRegistro
-FROM Participacion p
-JOIN Usuario u ON p.idUsuario = u.idUsuario
-WHERE p.idEvento = 1;
+-- ========================
+-- OPCIONAL: Refresh Tokens
+-- (solo si implementas sesiones largas)
+-- ========================
+CREATE TABLE RefreshToken (
+    token_id INT AUTO_INCREMENT PRIMARY KEY,
+    usuario_id INT NOT NULL,
+    token VARCHAR(500) NOT NULL,
+    fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
+    fecha_expiracion DATETIME NOT NULL,
+    valido BOOL DEFAULT TRUE,
+    FOREIGN KEY (usuario_id) REFERENCES Usuario(usuario_id)
+);
