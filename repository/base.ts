@@ -12,7 +12,7 @@ export default class BaseRepository<T extends Model> {
     try {
       return await this.model.findAll({ where: props });
     } catch (error) {
-      console.error("❌ Error al obtener registros:", error);
+      console.error("Error al obtener registros:", error);
       return null;
     }
   }
@@ -22,7 +22,7 @@ export default class BaseRepository<T extends Model> {
     try {
       return await this.model.create(data);
     } catch (error) {
-      console.error("❌ Error al crear registro:", error);
+      console.error("Error al crear registro:", error);
       return null;
     }
   }
@@ -32,7 +32,7 @@ export default class BaseRepository<T extends Model> {
     try {
       return await this.model.findByPk(id);
     } catch (error) {
-      console.error("❌ Error al buscar registro:", error);
+      console.error("Error al buscar registro:", error);
       return null;
     }
   }
@@ -46,7 +46,7 @@ export default class BaseRepository<T extends Model> {
       await record.update(attributes);
       return record;
     } catch (error) {
-      console.error("❌ Error al actualizar registro:", error);
+      console.error("Error al actualizar registro:", error);
       return null;
     }
   }
@@ -60,7 +60,7 @@ export default class BaseRepository<T extends Model> {
       await record.destroy();
       return true;
     } catch (error) {
-      console.error("❌ Error al eliminar registro:", error);
+      console.error("Error al eliminar registro:", error);
       return false;
     }
   }
