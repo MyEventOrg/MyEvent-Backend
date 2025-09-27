@@ -3,6 +3,8 @@ import dotenv from "dotenv";
 import cors from "cors";
 import fs from "fs";
 import path from "path";
+import cookieParser from "cookie-parser";
+
 
 dotenv.config();
 
@@ -10,7 +12,21 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 app.use(express.json());
-app.use(cors());
+
+
+// -----------cookiessssss---------------------------
+app.use(cookieParser());
+
+app.use(
+  cors({
+    origin: [
+      "http://localhost:3000",
+      "http://127.0.0.1:3000",
+    ],
+    credentials: true,
+  })
+);
+// ---------------------------------------------------
 
 
 // aqui cargamos todas las rutas

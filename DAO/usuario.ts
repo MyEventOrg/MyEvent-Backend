@@ -23,6 +23,10 @@ class UsuarioDAO {
   static async remove(id: number) {
     return usuarioRepository.remove(id);
   }
+
+  static async findByEmail(email: string) {
+    return Usuario.findOne({ where: { correo: email } });
+  }
 }
 
 export default UsuarioDAO;
