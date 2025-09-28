@@ -4,6 +4,7 @@ import cors from "cors";
 import fs from "fs";
 import path from "path";
 import cookieParser from "cookie-parser";
+import { verifyMailer } from "./configs/mailer"; // 👈 opcional
 
 
 dotenv.config();
@@ -28,6 +29,7 @@ app.use(
 );
 // ---------------------------------------------------
 
+verifyMailer();
 
 // aqui cargamos todas las rutas
 const routesPath = path.join(__dirname, "routes");

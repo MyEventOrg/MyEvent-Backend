@@ -10,4 +10,6 @@ router.post("/login", UsuarioController.iniciarSesion);
 
 router.post("/logout", UsuarioController.cerrarSesion);
 
+router.post("/crear-usuario", UsuarioController.crearUsuario);
+
 export default router;

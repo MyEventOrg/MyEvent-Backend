@@ -88,6 +88,45 @@ class UsuarioController {
       });
     }
   }
+  static async crearUsuario(req: Request, res: Response) {
+    try {
+      const { nombres, apellidos, apodo, email, password } = req.body;
+
+      const existe = await UsuarioDAO.findByEmail(email);
+      if (existe) {
+        return res.status(400).json({
+          success: false,
+          message: "El correo electrónico ya está registrado",
+        });
+      }
+
+      const nombreCompleto = `${nombres} ${apellidos}`;
+
+      const fecha = new Date();
+      const fechaActual = fecha.toLocaleDateString("sv-SE");
+      const nuevoUsuario = await UsuarioDAO.create({
+        nombreCompleto,
+        correo: email,
+        contrasena: password,
+        fecha_registro: fechaActual,
+        activo: 1,
+        rol: "user",
+        apodo,
+      });
+
+      return res.status(201).json({
+        success: true,
+        message: "Usuario creado exitosamente",
+        data: nuevoUsuario,
+      });
+    } catch (error) {
+      console.error("Error en crearUsuario:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Error en el servidor al crear usuario",
+      });
+    }
+  }
 }
 
 export default UsuarioController;
