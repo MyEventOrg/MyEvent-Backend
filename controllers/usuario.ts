@@ -92,14 +92,6 @@ class UsuarioController {
     try {
       const { nombres, apellidos, apodo, email, password } = req.body;
 
-      const existe = await UsuarioDAO.findByEmail(email);
-      if (existe) {
-        return res.status(400).json({
-          success: false,
-          message: "El correo electrónico ya está registrado",
-        });
-      }
-
       const nombreCompleto = `${nombres} ${apellidos}`;
 
       const fecha = new Date();

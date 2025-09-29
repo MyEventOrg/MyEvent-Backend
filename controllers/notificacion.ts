@@ -3,7 +3,7 @@ import { Request, Response } from "express";
 import fs from "fs";
 import path from "path";
 import { transporter, MAIL } from "../configs/mailer";
-
+import UsuarioDAO from "../DAO/usuario";
 const verificationStore = new Map<string, { code: string; expiresAt: number }>();
 const CODE_TTL_MS = 10 * 60 * 1000;
 const MINUTES = CODE_TTL_MS / 60000;
@@ -27,6 +27,13 @@ class NotificationController {
     static async enviarCodigoVerificacion(req: Request, res: Response) {
         try {
             const { email } = req.body as { email: string };
+            const existe = await UsuarioDAO.findByEmail(email);
+            if (existe) {
+                return res.status(400).json({
+                    success: false,
+                    message: "El correo electrónico ya está registrado",
+                });
+            }
             const code = generate6DigitCode();
             verificationStore.set(email.toLowerCase(), {
                 code,
