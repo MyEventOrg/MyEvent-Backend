@@ -12,4 +12,8 @@ router.post("/logout", UsuarioController.cerrarSesion);
 
 router.post("/crear-usuario", UsuarioController.crearUsuario);
 
+router.get("/usuarios", UsuarioController.getUsuarios);
+
+router.put("/usuarios/:id/estado", UsuarioController.changeActivation);
+
 export default router;

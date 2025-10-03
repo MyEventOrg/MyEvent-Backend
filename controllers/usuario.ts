@@ -119,6 +119,51 @@ class UsuarioController {
       });
     }
   }
+  static async getUsuarios(req: Request, res: Response) {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = 10;
+      const search = (req.query.search as string) || "";
+
+      const result = await UsuarioDAO.findPaginatedUsers(page, limit, search);
+
+      return res.json({
+        data: result.data,
+        page: result.page,
+        total: result.total,
+        totalPages: result.totalPages,
+      });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ error: "Error al obtener usuarios" });
+    }
+  }
+
+  static async changeActivation(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const { activo } = req.body;
+
+      if (activo !== 0 && activo !== 1) {
+        return res.status(400).json({ error: "El estado activo debe ser 0 o 1" });
+      }
+
+      const updatedUser = await UsuarioDAO.update(Number(id), { activo });
+
+      if (!updatedUser) {
+        return res.status(404).json({ error: "Usuario no encontrado" });
+      }
+
+      return res.json({
+        success: true,
+        message: `Usuario ${id} actualizado correctamente`,
+        data: updatedUser,
+      });
+    } catch (error) {
+      console.error("Error al cambiar estado de usuario:", error);
+      return res.status(500).json({ error: "Error interno al cambiar estado" });
+    }
+  }
 }
 
 export default UsuarioController;
