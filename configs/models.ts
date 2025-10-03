@@ -70,15 +70,17 @@ Categoria.init(
 /* =========================================================
  * EVENTO
  * =======================================================*/
+
 export interface EventoAttributes {
   evento_id: number;
   titulo: string;
   descripcion_corta: string;
   descripcion_larga?: string | null;
   fecha_evento: Date;
+  fecha_creacion_evento: Date;
   hora: string;
   url_imagen?: string | null;
-  tipo_evento: string; // 'publico' | 'privado'
+  tipo_evento: "publico" | "privado";
   ubicacion?: string | null;
   latitud?: string | null;
   longitud?: string | null;
@@ -86,9 +88,10 @@ export interface EventoAttributes {
   distrito?: string | null;
   url_direccion?: string | null;
   url_recurso?: string | null;
-  estado_evento: boolean;
+  estado_evento: "pendiente" | "rechazado" | "activo" | "vencido";
   categoria_id?: number | null; // FK
 }
+
 export type EventoCreationAttributes = Optional<
   EventoAttributes,
   | "evento_id"
@@ -112,9 +115,10 @@ export class Evento
   public descripcion_corta!: string;
   public descripcion_larga?: string | null;
   public fecha_evento!: Date;
+  public fecha_creacion_evento!: Date;
   public hora!: string;
   public url_imagen?: string | null;
-  public tipo_evento!: string;
+  public tipo_evento!: "publico" | "privado";
   public ubicacion?: string | null;
   public latitud?: string | null;
   public longitud?: string | null;
@@ -122,7 +126,7 @@ export class Evento
   public distrito?: string | null;
   public url_direccion?: string | null;
   public url_recurso?: string | null;
-  public estado_evento!: boolean;
+  public estado_evento!: "pendiente" | "rechazado" | "activo" | "vencido";
   public categoria_id?: number | null;
 }
 
@@ -132,10 +136,11 @@ Evento.init(
     titulo: { type: DataTypes.STRING(60), allowNull: false },
     descripcion_corta: { type: DataTypes.STRING(200), allowNull: false },
     descripcion_larga: { type: DataTypes.TEXT, allowNull: true },
-    fecha_evento: { type: DataTypes.DATE, allowNull: false },
+    fecha_evento: { type: DataTypes.DATEONLY, allowNull: false },
+    fecha_creacion_evento: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW }, // 👈 agregado
     hora: { type: DataTypes.STRING(10), allowNull: false },
     url_imagen: { type: DataTypes.STRING(200), allowNull: true },
-    tipo_evento: { type: DataTypes.STRING(7), allowNull: false }, // 'publico'/'privado'
+    tipo_evento: { type: DataTypes.ENUM("publico", "privado"), allowNull: false },
     ubicacion: { type: DataTypes.STRING(200), allowNull: true },
     latitud: { type: DataTypes.STRING(40), allowNull: true },
     longitud: { type: DataTypes.STRING(40), allowNull: true },
@@ -143,11 +148,20 @@ Evento.init(
     distrito: { type: DataTypes.STRING(20), allowNull: true },
     url_direccion: { type: DataTypes.STRING(200), allowNull: true },
     url_recurso: { type: DataTypes.STRING(200), allowNull: true },
-    estado_evento: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true },
-    categoria_id: { type: DataTypes.INTEGER, allowNull: true, references: { model: "Categoria", key: "categoria_id" } },
+    estado_evento: {
+      type: DataTypes.ENUM("pendiente", "rechazado", "activo", "vencido"),
+      allowNull: false,
+      defaultValue: "pendiente"
+    },
+    categoria_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: { model: "Categoria", key: "categoria_id" }
+    },
   },
   { sequelize, tableName: "Evento", timestamps: false }
 );
+
 
 /* =========================================================
  * PARTICIPACION

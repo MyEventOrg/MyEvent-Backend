@@ -23,6 +23,45 @@ class EventoDAO {
   static async remove(id: number) {
     return eventoRepository.remove(id);
   }
+
+  //nuevo método para paginar eventos públicos
+  static async findPublicEvents(page: number, limit: number) {
+    const offset = (page - 1) * limit;
+
+    const { count, rows } = await Evento.findAndCountAll({
+      where: { tipo_evento: "publico" },
+      limit,
+      offset,
+      order: [["fecha_creacion_evento", "DESC"]],
+    });
+
+    return {
+      data: rows,
+      total: count,
+      page,
+      totalPages: Math.ceil(count / limit),
+    };
+  }
+
+  // nuevo método para paginar eventos privados
+  static async findPrivateEvents(page: number, limit: number) {
+    const offset = (page - 1) * limit;
+
+    const { count, rows } = await Evento.findAndCountAll({
+      where: { tipo_evento: "privado" },
+      limit,
+      offset,
+      order: [["fecha_creacion_evento", "DESC"]],
+    });
+
+    return {
+      data: rows,
+      total: count,
+      page,
+      totalPages: Math.ceil(count / limit),
+    };
+  }
+
 }
 
 export default EventoDAO;

@@ -20,6 +20,7 @@ CREATE TABLE Evento (
     descripcion_corta  VARCHAR(200) NOT NULL,
     descripcion_larga  text,
     fecha_evento       DATE NOT NULL,
+    fecha_creacion_evento DATE NOT NULL,
     hora               VARCHAR(10) NOT NULL,
     url_imagen         VARCHAR(200),
     tipo_evento        VARCHAR(7) NOT NULL, -- "publico"/"privado"
@@ -30,7 +31,7 @@ CREATE TABLE Evento (
     distrito           VARCHAR(20),
     url_direccion      VARCHAR(200),
     url_recurso        VARCHAR(200),
-    estado_evento      BOOL NOT NULL DEFAULT TRUE,
+    estado_evento ENUM('pendiente', 'rechazado', 'activo', 'vencido') NOT NULL DEFAULT 'pendiente',
     categoria_id       INT,
     FOREIGN KEY (categoria_id) REFERENCES Categoria(categoria_id)
 );
@@ -137,64 +138,89 @@ INSERT INTO Categoria (nombre) VALUES
 ('Startup Pitch');
 
 INSERT INTO Evento 
-(titulo, descripcion_corta, descripcion_larga, fecha_evento, hora, url_imagen, 
+(titulo, descripcion_corta, descripcion_larga, fecha_evento, fecha_creacion_evento, hora, url_imagen, 
  tipo_evento, ubicacion, latitud, longitud, ciudad, distrito, url_direccion, url_recurso, estado_evento, categoria_id)
 VALUES
+('Hackathon Universitaria 2025',
+ 'Competencia intensiva de programación.',
+ 'Estudiantes se reúnen por 48 horas para resolver retos tecnológicos con innovación.',
+ '2025-11-28', '2025-09-28', '09:00',
+ 'https://example.com/img10.jpg', 'publico',
+ 'Pontificia Universidad Católica del Perú', '-12.0683', '-77.0781',
+ 'Lima', 'San Miguel', 'https://maps.google.com/10', 'https://example.com/resource10', 'pendiente', 9),
+
 ('Tech Conference 2025',
  'Conferencia sobre innovación y tendencias tecnológicas.',
- 'Una conferencia internacional que reúne a expertos en inteligencia artificial, blockchain y ciberseguridad para discutir el futuro de la tecnología.',
- '2025-11-15', '09:00',
+ 'Una conferencia internacional con expertos en IA, blockchain y ciberseguridad.',
+ '2025-11-15', '2025-09-25', '09:00',
  'https://example.com/img1.jpg', 'publico',
  'Centro de Convenciones de Lima', '-12.0464', '-77.0428',
- 'Lima', 'San Borja', 'https://maps.google.com/1', 'https://example.com/resource1', TRUE, 1),
-
-('Rock Fest Lima',
- 'Festival de música rock con bandas internacionales.',
- 'Una experiencia única con escenarios múltiples, zona gastronómica y artistas de talla mundial en un evento de 8 horas de duración.',
- '2025-12-20', '18:00',
- 'https://example.com/img2.jpg', 'publico',
- 'Estadio Nacional', '-12.0678', '-77.0332',
- 'Lima', 'Cercado de Lima', 'https://maps.google.com/2', 'https://example.com/resource2', TRUE, 2),
-
-('Carrera 10K Lima',
- 'Competencia deportiva abierta al público.',
- 'Evento deportivo anual donde corredores profesionales y amateurs participan en un recorrido de 10 km por el centro de Lima.',
- '2025-10-05', '07:30',
- 'https://example.com/img3.jpg', 'publico',
- 'Parque de la Exposición', '-12.0615', '-77.0375',
- 'Lima', 'Centro Histórico', 'https://maps.google.com/3', 'https://example.com/resource3', TRUE, 3),
-
-('Taller de Emprendimiento',
- 'Capacitación práctica para emprendedores jóvenes.',
- 'Un taller intensivo de 6 horas con expertos en modelos de negocio, pitch de startups y marketing digital.',
- '2025-09-30', '14:00',
- 'https://example.com/img4.jpg', 'privado',
- 'Universidad de Lima', '-12.0840', '-76.9717',
- 'Lima', 'Surco', 'https://maps.google.com/4', 'https://example.com/resource4', TRUE, 4),
+ 'Lima', 'San Borja', 'https://maps.google.com/1', 'https://example.com/resource1', 'pendiente', 1),
 
 ('Networking Startup Night',
  'Encuentro de emprendedores y profesionales de tecnología.',
- 'Un espacio para conectar fundadores de startups, inversores y mentores en un ambiente distendido con música y coffee break.',
- '2025-11-05', '19:00',
+ 'Espacio para conectar fundadores de startups, inversores y mentores.',
+ '2025-11-05', '2025-09-20', '19:00',
  'https://example.com/img5.jpg', 'publico',
  'WeWork Torre Begonias', '-12.0932', '-77.0314',
- 'Lima', 'San Isidro', 'https://maps.google.com/5', 'https://example.com/resource5', TRUE, 5),
+ 'Lima', 'San Isidro', 'https://maps.google.com/5', 'https://example.com/resource5', 'pendiente', 5),
 
 ('Webinar de Ciberseguridad',
  'Seminario virtual sobre seguridad digital.',
- 'Evento online con especialistas que explicarán las amenazas más comunes, cómo proteger la información y mejores prácticas en entornos empresariales.',
- '2025-10-22', '16:00',
+ 'Especialistas explicarán amenazas comunes y cómo proteger la información.',
+ '2025-10-22', '2025-09-18', '16:00',
  'https://example.com/img6.jpg', 'publico',
  'Evento Online - Zoom', '0', '0',
- 'Lima', 'Virtual', 'https://zoom.com/webinar123', 'https://example.com/resource6', TRUE, 6),
+ 'Lima', 'Virtual', 'https://zoom.com/webinar123', 'https://example.com/resource6', 'pendiente', 6),
+
+('Carrera 10K Lima',
+ 'Competencia deportiva abierta al público.',
+ 'Corredores profesionales y amateurs participan en un recorrido de 10 km por el centro de Lima.',
+ '2025-10-05', '2025-09-10', '07:30',
+ 'https://example.com/img3.jpg', 'publico',
+ 'Parque de la Exposición', '-12.0615', '-77.0375',
+ 'Lima', 'Centro Histórico', 'https://maps.google.com/3', 'https://example.com/resource3', 'activo', 3),
 
 ('Festival Gastronómico Peruano',
  'Muestra culinaria con los mejores chefs del país.',
- 'Degustaciones, clases en vivo, venta de productos locales y exhibiciones de cocina internacional fusionada con gastronomía peruana.',
- '2025-12-01', '11:00',
+ 'Degustaciones, clases en vivo y exhibiciones de cocina fusión peruana.',
+ '2025-12-01', '2025-09-05', '11:00',
  'https://example.com/img7.jpg', 'publico',
  'Parque de la Amistad', '-12.1440', '-76.9890',
- 'Lima', 'Surco', 'https://maps.google.com/7', 'https://example.com/resource7', TRUE, 26);
+ 'Lima', 'Surco', 'https://maps.google.com/7', 'https://example.com/resource7', 'activo', 26),
+
+('Rock Fest Lima',
+ 'Festival de música rock con bandas internacionales.',
+ 'Escenarios múltiples, zona gastronómica y artistas de talla mundial.',
+ '2025-12-20', '2025-08-28', '18:00',
+ 'https://example.com/img2.jpg', 'publico',
+ 'Estadio Nacional', '-12.0678', '-77.0332',
+ 'Lima', 'Cercado de Lima', 'https://maps.google.com/2', 'https://example.com/resource2', 'activo', 2),
+
+('Exposición de Arte Moderno',
+ 'Galería abierta con obras de artistas contemporáneos.',
+ 'Recorrido cultural con charlas de artistas y presentaciones audiovisuales.',
+ '2025-09-25', '2025-08-15', '10:00',
+ 'https://example.com/img9.jpg', 'publico',
+ 'Museo de Arte de Lima', '-12.0670', '-77.0360',
+ 'Lima', 'Cercado de Lima', 'https://maps.google.com/9', 'https://example.com/resource9', 'rechazado', 8),
+
+('Congreso de Medicina Digital',
+ 'Explorando el futuro de la telemedicina y salud digital.',
+ 'Ponencias sobre inteligencia artificial aplicada a la salud y wearables médicos.',
+ '2025-11-10', '2025-07-20', '08:30',
+ 'https://example.com/img8.jpg', 'publico',
+ 'Hotel Westin Lima', '-12.1000', '-77.0330',
+ 'Lima', 'San Isidro', 'https://maps.google.com/8', 'https://example.com/resource8', 'vencido', 7),
+
+('Taller de Emprendimiento',
+ 'Capacitación práctica para emprendedores jóvenes.',
+ 'Un taller intensivo con expertos en modelos de negocio y marketing digital.',
+ '2025-09-30', '2025-07-01', '14:00',
+ 'https://example.com/img4.jpg', 'privado',
+ 'Universidad de Lima', '-12.0840', '-76.9717',
+ 'Lima', 'Surco', 'https://maps.google.com/4', 'https://example.com/resource4', 'rechazado', 4);
+
 
 
 -- Juan crea el evento Tech Conference (organizador)
