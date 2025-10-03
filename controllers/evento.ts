@@ -3,6 +3,8 @@ import EventoDAO from "../DAO/evento";
 import ParticipacionDAO from "../DAO/participacion";
 import UsuarioDAO from "../DAO/usuario";
 import CategoriaDAO from "../DAO/categoria";
+import EventoService from "../services/eventoService";
+import { CreateEventoRequestDTO } from "../types/evento";
 
 
 class EventoController {
@@ -147,6 +149,46 @@ class EventoController {
         } catch (error: any) {
             console.error("Error al actualizar estado del evento:", error);
             return res.status(500).json({ success: false, message: "Error interno del servidor" });
+        }
+    }
+
+    static async createEvento(req: Request, res: Response) {
+        try {
+            // Extraer usuario_id (todos los usuarios deben estar autenticados)
+            const usuario_id = req.body.usuario_id || (req as any).user?.usuario_id;
+            
+            const eventoData: CreateEventoRequestDTO = {
+                titulo: req.body.titulo,
+                descripcion_corta: req.body.descripcion_corta,
+                descripcion_larga: req.body.descripcion_larga,
+                fecha_evento: req.body.fecha_evento,
+                hora: req.body.hora,
+                tipo_evento: req.body.tipo_evento,
+                ubicacion: req.body.ubicacion,
+                latitud: req.body.latitud,
+                longitud: req.body.longitud,
+                ciudad: req.body.ciudad,
+                distrito: req.body.distrito,
+                categoria_id: req.body.categoria_id,
+                usuario_id: usuario_id
+            };
+
+            // Usar el servicio para crear el evento
+            const eventoService = new EventoService();
+            const result = await eventoService.createEvento(eventoData);
+
+            if (result.success) {
+                return res.status(201).json(result);
+            } else {
+                return res.status(400).json(result);
+            }
+
+        } catch (error: any) {
+            console.error("Error en EventoController.createEvento:", error);
+            return res.status(500).json({ 
+                success: false, 
+                message: "Error interno del servidor" 
+            });
         }
     }
 }

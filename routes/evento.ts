@@ -9,4 +9,6 @@ router.get("/eventos/privados", EventoController.getEventosPrivados);
 
 router.put("/eventos/:id/estado", EventoController.updateEstado);
 
+router.post("/eventos", EventoController.createEvento);
+
 export default router;
