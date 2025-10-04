@@ -32,7 +32,7 @@ class EventoDAO {
       where: { tipo_evento: "publico" },
       limit,
       offset,
-      order: [["fecha_creacion_evento", "DESC"]],
+      order: [["evento_id", "DESC"]],
     });
 
     return {
@@ -51,7 +51,7 @@ class EventoDAO {
       where: { tipo_evento: "privado" },
       limit,
       offset,
-      order: [["fecha_creacion_evento", "DESC"]],
+      order: [["evento_id", "DESC"]],
     });
 
     return {
