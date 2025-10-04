@@ -11,6 +11,8 @@ export interface CreateEventoRequestDTO {
     longitud?: string;
     ciudad?: string;
     distrito?: string;
+    url_direccion?: string;
+    url_recurso?: string;
     categoria_id?: number;
     usuario_id: number;
 }
@@ -31,6 +33,8 @@ export interface CreateEventoResponseDTO {
         longitud?: string;
         ciudad?: string;
         distrito?: string;
+        url_direccion?: string;
+        url_recurso?: string;
         estado_evento: "pendiente" | "rechazado" | "activo" | "vencido";
         categoria_id?: number;
     };

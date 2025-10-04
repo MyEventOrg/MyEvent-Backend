@@ -3,6 +3,8 @@ import EventoDAO from "../DAO/evento";
 import ParticipacionDAO from "../DAO/participacion";
 import { EventoCreationAttributes } from "../configs/models";
 import { CreateEventoRequestDTO } from "../types/evento";
+import { GoogleMapsHelper } from "../helpers/googleMaps";
+import { GeocodingService } from "../helpers/geocoding";
 
 export interface CreateEventoResponse {
     success: boolean;
@@ -92,6 +94,25 @@ class EventoService {
                 };
             }
 
+            // Extraer distrito automáticamente si no se proporcionó
+            let distrito = data.distrito?.trim() || null;
+            if (!distrito && (data.ubicacion || data.ciudad)) {
+                distrito = GeocodingService.extractDistrito({
+                    ubicacion: data.ubicacion,
+                    ciudad: data.ciudad,
+                    distrito: data.distrito
+                });
+            }
+
+            // Auto-completar ciudad basada en distrito y ubicación
+            let ciudad = data.ciudad?.trim() || null;
+            if (!ciudad) {
+                ciudad = GeocodingService.extractCiudad(
+                    data.ubicacion || '', 
+                    distrito || undefined
+                );
+            }
+
             // Preparar datos para el modelo
             const eventoData: EventoCreationAttributes = {
                 titulo: data.titulo.trim(),
@@ -104,13 +125,22 @@ class EventoService {
                 ubicacion: data.ubicacion?.trim() || null,
                 latitud: data.latitud || null,
                 longitud: data.longitud || null,
-                ciudad: data.ciudad?.trim() || null,
-                distrito: data.distrito?.trim() || null,
+                ciudad: ciudad,
+                distrito: distrito,
+                // Generar URL de Google Maps automáticamente si no se proporciona
+                url_direccion: data.url_direccion || GoogleMapsHelper.generateMapUrl({
+                    ubicacion: data.ubicacion,
+                    latitud: data.latitud,
+                    longitud: data.longitud,
+                    ciudad: ciudad,
+                    distrito: distrito || undefined
+                }),
+                url_recurso: data.url_recurso || null, // ✅ AGREGADO EXPLÍCITAMENTE
                 estado_evento: "pendiente", // Estado inicial
                 categoria_id: data.categoria_id || null,
             };
 
-            // Crear evento
+            // 5. Crear el evento en la base de datos
             const evento = await EventoDAO.create(eventoData);
 
             if (!evento) {

@@ -5,6 +5,7 @@ import UsuarioDAO from "../DAO/usuario";
 import CategoriaDAO from "../DAO/categoria";
 import EventoService from "../services/eventoService";
 import { CreateEventoRequestDTO } from "../types/evento";
+import { PdfUploadService } from "../helpers/pdfUpload";
 
 
 class EventoController {
@@ -152,45 +153,90 @@ class EventoController {
         }
     }
 
-    static async createEvento(req: Request, res: Response) {
-        try {
-            // Extraer usuario_id (todos los usuarios deben estar autenticados)
-            const usuario_id = req.body.usuario_id || (req as any).user?.usuario_id;
-            
-            const eventoData: CreateEventoRequestDTO = {
-                titulo: req.body.titulo,
-                descripcion_corta: req.body.descripcion_corta,
-                descripcion_larga: req.body.descripcion_larga,
-                fecha_evento: req.body.fecha_evento,
-                hora: req.body.hora,
-                tipo_evento: req.body.tipo_evento,
-                ubicacion: req.body.ubicacion,
-                latitud: req.body.latitud,
-                longitud: req.body.longitud,
-                ciudad: req.body.ciudad,
-                distrito: req.body.distrito,
-                categoria_id: req.body.categoria_id,
-                usuario_id: usuario_id
-            };
+    /**
+     * Crear evento (con o sin PDF)
+     * Si se envía un archivo PDF, se sube automáticamente
+     */
+    static createEvento = [
+        // Middleware para manejar archivos (opcional)
+        PdfUploadService.getMulterConfig().fields([
+            { name: 'pdf', maxCount: 1 },
+            { name: 'recurso', maxCount: 1 },
+            { name: 'file', maxCount: 1 }
+        ]),
+        
+        async (req: Request, res: Response) => {
+            try {
+                // Extraer usuario_id
+                const usuario_id = req.body.usuario_id || (req as any).user?.usuario_id;
+                
+                let pdfUrl = req.body.url_recurso; // URL existente si se proporciona
+                
+                // Obtener el archivo PDF de cualquier campo
+                let pdfFile = req.file;
+                if (!pdfFile && (req as any).files) {
+                    const files = (req as any).files;
+                    pdfFile = files.pdf?.[0] || files.recurso?.[0] || files.file?.[0];
+                }
+                
+                // Si hay archivo PDF, subirlo
+                if (pdfFile) {
+                    const validation = PdfUploadService.validatePdfFile(pdfFile);
+                    if (!validation.valid) {
+                        return res.status(400).json({
+                            success: false,
+                            message: validation.error
+                        });
+                    }
+                    
+                    const uploadResult = await PdfUploadService.uploadPdf(pdfFile);
+                    if (!uploadResult.success) {
+                        return res.status(500).json({
+                            success: false,
+                            message: uploadResult.message
+                        });
+                    }
+                    
+                    pdfUrl = uploadResult.url;
+                }
 
-            // Usar el servicio para crear el evento
-            const eventoService = new EventoService();
-            const result = await eventoService.createEvento(eventoData);
+                const eventoData: CreateEventoRequestDTO = {
+                    titulo: req.body.titulo,
+                    descripcion_corta: req.body.descripcion_corta,
+                    descripcion_larga: req.body.descripcion_larga,
+                    fecha_evento: req.body.fecha_evento,
+                    hora: req.body.hora,
+                    tipo_evento: req.body.tipo_evento,
+                    ubicacion: req.body.ubicacion,
+                    latitud: req.body.latitud,
+                    longitud: req.body.longitud,
+                    ciudad: req.body.ciudad,
+                    distrito: req.body.distrito,
+                    url_direccion: req.body.url_direccion,
+                    url_recurso: pdfUrl, // ✅ Incluir la URL del PDF
+                    categoria_id: req.body.categoria_id ? parseInt(req.body.categoria_id) : undefined,
+                    usuario_id: usuario_id
+                };
 
-            if (result.success) {
-                return res.status(201).json(result);
-            } else {
-                return res.status(400).json(result);
+                // Usar el servicio para crear el evento
+                const eventoService = new EventoService();
+                const result = await eventoService.createEvento(eventoData);
+
+                if (result.success) {
+                    return res.status(201).json(result);
+                } else {
+                    return res.status(400).json(result);
+                }
+
+            } catch (error: any) {
+                console.error("Error en EventoController.createEvento:", error);
+                return res.status(500).json({ 
+                    success: false, 
+                    message: "Error interno del servidor" 
+                });
             }
-
-        } catch (error: any) {
-            console.error("Error en EventoController.createEvento:", error);
-            return res.status(500).json({ 
-                success: false, 
-                message: "Error interno del servidor" 
-            });
         }
-    }
+    ];
 }
 
 export default EventoController;

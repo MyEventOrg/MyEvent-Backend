@@ -20,7 +20,8 @@ export default class BaseRepository<T extends Model> {
   // Crear un nuevo registro
   async create(data: Partial<T>): Promise<T | null> {
     try {
-      return await this.model.create(data);
+      const result = await this.model.create(data);
+      return result;
     } catch (error) {
       console.error("Error al crear registro:", error);
       return null;
