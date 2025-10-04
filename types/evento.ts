@@ -15,6 +15,7 @@ export interface CreateEventoRequestDTO {
     url_recurso?: string;
     categoria_id?: number;
     usuario_id: number;
+    url_imagen?: string;
 }
 
 export interface CreateEventoResponseDTO {
@@ -37,6 +38,7 @@ export interface CreateEventoResponseDTO {
         url_recurso?: string;
         estado_evento: "pendiente" | "rechazado" | "activo" | "vencido";
         categoria_id?: number;
+        url_imagen?: string;
     };
     message?: string;
 }

@@ -138,6 +138,7 @@ class EventoService {
                 url_recurso: data.url_recurso || null, // ✅ AGREGADO EXPLÍCITAMENTE
                 estado_evento: "pendiente", // Estado inicial
                 categoria_id: data.categoria_id || null,
+                url_imagen: data.url_imagen?.trim() || null,
             };
 
             // 5. Crear el evento en la base de datos

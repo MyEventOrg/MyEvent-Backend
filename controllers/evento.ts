@@ -154,8 +154,8 @@ class EventoController {
     }
 
     /**
-     * Crear evento (con o sin PDF)
-     * Si se envía un archivo PDF, se sube automáticamente
+     * Crear evento (con imagen y/o PDF)
+     * Maneja tanto imágenes como archivos PDF
      */
     static createEvento = [
         // Middleware para manejar archivos (opcional)
@@ -213,6 +213,7 @@ class EventoController {
                     ciudad: req.body.ciudad,
                     distrito: req.body.distrito,
                     url_direccion: req.body.url_direccion,
+                    url_imagen: req.body.url_imagen, // ✅ Mantener imagen del sistema original
                     url_recurso: pdfUrl, // ✅ Incluir la URL del PDF
                     categoria_id: req.body.categoria_id ? parseInt(req.body.categoria_id) : undefined,
                     usuario_id: usuario_id
