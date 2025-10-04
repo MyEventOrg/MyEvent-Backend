@@ -1,6 +1,6 @@
 import BaseRepository from "../repository/base";
 import { Evento } from "../configs/models";
-
+import { Op } from "sequelize";
 const eventoRepository = new BaseRepository(Evento);
 
 class EventoDAO {
@@ -60,6 +60,19 @@ class EventoDAO {
       page,
       totalPages: Math.ceil(count / limit),
     };
+  }
+
+  static async findByIdsActivos(eventoIds: number[]) {
+    if (!eventoIds?.length) return [];
+    return Evento.findAll({
+      where: {
+        evento_id: { [Op.in]: eventoIds },
+        estado_evento: "activo",
+      },
+      // agrega/quita atributos según necesites
+      // attributes: [...]
+      order: [["fecha_creacion_evento", "DESC"]],
+    });
   }
 
 }

@@ -23,6 +23,13 @@ class EventosGuardadoDAO {
   static async remove(id: number) {
     return eventosGuardadoRepository.remove(id);
   }
+
+  static async findByUsuarioId(usuario_id: number) {
+    return EventosGuardado.findAll({
+      where: { usuario_id },
+      attributes: ["evento_id"],
+    });
+  }
 }
 
 export default EventosGuardadoDAO;

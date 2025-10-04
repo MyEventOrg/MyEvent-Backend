@@ -1,6 +1,6 @@
 import BaseRepository from "../repository/base";
 import { Participacion } from "../configs/models";
-
+import { Op } from "sequelize";
 const participacionRepository = new BaseRepository(Participacion);
 
 class ParticipacionDAO {
@@ -35,6 +35,18 @@ class ParticipacionDAO {
       console.error("Error en findOrganizadorByEventoId:", error);
       return null;
     }
+  }
+
+  static async findByUsuarioId(usuario_id: number) {
+    return Participacion.findAll({ where: { usuario_id } });
+  }
+
+  static async findByUsuarioIdAndRoles(usuario_id: number, roles: string[] | string) {
+    const arr = Array.isArray(roles) ? roles : [roles];
+    return Participacion.findAll({
+      where: { usuario_id, rol_evento: { [Op.in]: arr } },
+      attributes: ["participacion_id", "evento_id", "rol_evento"],
+    });
   }
 }
 
