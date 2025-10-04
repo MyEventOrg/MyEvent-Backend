@@ -41,17 +41,20 @@ class UsuarioController {
           message: "Usuario o contraseña errónea",
         });
       }
+
       const payload = {
         usuario_id: usuario.usuario_id,
         apodo: usuario.apodo,
         rol: usuario.rol,
       };
 
-      const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "1h" });
+      const token = jwt.sign(payload, JWT_SECRET);
 
       res.cookie("token", token, {
         httpOnly: false,
         secure: false,
+        sameSite: "lax",
+        path: "/",
       });
 
       return res.status(200).json({
@@ -67,6 +70,7 @@ class UsuarioController {
       });
     }
   }
+
   static async cerrarSesion(req: Request, res: Response) {
     try {
       res.clearCookie("token", {
