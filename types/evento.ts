@@ -13,6 +13,7 @@ export interface CreateEventoRequestDTO {
     distrito?: string;
     categoria_id?: number;
     usuario_id: number;
+    url_imagen?: string;
 }
 
 export interface CreateEventoResponseDTO {
@@ -33,6 +34,7 @@ export interface CreateEventoResponseDTO {
         distrito?: string;
         estado_evento: "pendiente" | "rechazado" | "activo" | "vencido";
         categoria_id?: number;
+        url_imagen?: string;
     };
     message?: string;
 }

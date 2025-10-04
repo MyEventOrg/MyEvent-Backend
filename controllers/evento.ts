@@ -156,7 +156,7 @@ class EventoController {
         try {
             // Extraer usuario_id (todos los usuarios deben estar autenticados)
             const usuario_id = req.body.usuario_id || (req as any).user?.usuario_id;
-            
+
             const eventoData: CreateEventoRequestDTO = {
                 titulo: req.body.titulo,
                 descripcion_corta: req.body.descripcion_corta,
@@ -170,8 +170,10 @@ class EventoController {
                 ciudad: req.body.ciudad,
                 distrito: req.body.distrito,
                 categoria_id: req.body.categoria_id,
-                usuario_id: usuario_id
+                usuario_id: usuario_id,
+                url_imagen: req.body.url_imagen,
             };
+
 
             // Usar el servicio para crear el evento
             const eventoService = new EventoService();
@@ -185,9 +187,9 @@ class EventoController {
 
         } catch (error: any) {
             console.error("Error en EventoController.createEvento:", error);
-            return res.status(500).json({ 
-                success: false, 
-                message: "Error interno del servidor" 
+            return res.status(500).json({
+                success: false,
+                message: "Error interno del servidor"
             });
         }
     }

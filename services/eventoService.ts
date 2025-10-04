@@ -108,6 +108,7 @@ class EventoService {
                 distrito: data.distrito?.trim() || null,
                 estado_evento: "pendiente", // Estado inicial
                 categoria_id: data.categoria_id || null,
+                url_imagen: data.url_imagen?.trim() || null,
             };
 
             // Crear evento
