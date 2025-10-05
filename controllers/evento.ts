@@ -5,7 +5,7 @@ import UsuarioDAO from "../DAO/usuario";
 import CategoriaDAO from "../DAO/categoria";
 import EventoService from "../services/eventoService";
 import { CreateEventoRequestDTO } from "../types/evento";
-import { PdfUploadService } from "../helpers/pdfUpload";
+import { FileUploadService } from "../helpers/fileUpload";
 
 
 class EventoController {
@@ -155,11 +155,11 @@ class EventoController {
 
     /**
      * Crear evento (con imagen y/o PDF)
-     * Maneja tanto imágenes como archivos PDF
+     * Maneja tanto imágenes como archivos PDF usando validaciones específicas
      */
     static createEvento = [
-        // Middleware para manejar archivos (opcional)
-        PdfUploadService.getMulterConfig().fields([
+        // Middleware para manejar archivos con validaciones específicas
+        FileUploadService.getMulterConfig().fields([
             { name: 'pdf', maxCount: 1 },
             { name: 'recurso', maxCount: 1 },
             { name: 'file', maxCount: 1 }
@@ -179,9 +179,9 @@ class EventoController {
                     pdfFile = files.pdf?.[0] || files.recurso?.[0] || files.file?.[0];
                 }
                 
-                // Si hay archivo PDF, subirlo
+                // Si hay archivo PDF, validarlo específicamente como PDF y subirlo
                 if (pdfFile) {
-                    const validation = PdfUploadService.validatePdfFile(pdfFile);
+                    const validation = FileUploadService.validatePdfFile(pdfFile);
                     if (!validation.valid) {
                         return res.status(400).json({
                             success: false,
@@ -189,7 +189,7 @@ class EventoController {
                         });
                     }
                     
-                    const uploadResult = await PdfUploadService.uploadPdf(pdfFile);
+                    const uploadResult = await FileUploadService.uploadFile(pdfFile);
                     if (!uploadResult.success) {
                         return res.status(500).json({
                             success: false,

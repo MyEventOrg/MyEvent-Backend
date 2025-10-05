@@ -1,29 +1,87 @@
 // routes/upload.ts
 import { Router } from "express";
-import multer from "multer";
-import cloudinary from "../configs/claudinary";
+import { FileUploadService } from "../helpers/fileUpload";
 
 const router = Router();
-const upload = multer({ storage: multer.memoryStorage() });
 
-router.post("/upload", upload.single("file"), async (req, res) => {
+// Endpoint específico para imágenes
+router.post("/upload/image", FileUploadService.getImageMulterConfig().single("file"), async (req, res) => {
     try {
         const file = req.file;
         if (!file) {
             return res.status(400).json({ ok: false, error: "No se envió archivo" });
         }
 
-        // convertir a base64
-        const b64 = file.buffer.toString("base64");
-        const dataURI = `data:${file.mimetype};base64,${b64}`;
+        // Validar que sea específicamente una imagen
+        const validation = FileUploadService.validateImageFile(file);
+        if (!validation.valid) {
+            return res.status(400).json({ ok: false, error: validation.error });
+        }
 
-        // subir a Cloudinary
-        const result = await cloudinary.uploader.upload(dataURI, {
-            folder: "eventos",
-            resource_type: "image",
-        });
+        // Subir archivo usando el servicio unificado
+        const result = await FileUploadService.uploadFile(file);
+        
+        if (result.success) {
+            return res.json({ ok: true, url: result.url });
+        } else {
+            return res.status(500).json({ ok: false, error: result.message });
+        }
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ ok: false, error: "Error subiendo imagen" });
+    }
+});
 
-        return res.json({ ok: true, url: result.secure_url });
+// Endpoint específico para PDFs
+router.post("/upload/pdf", FileUploadService.getPdfMulterConfig().single("file"), async (req, res) => {
+    try {
+        const file = req.file;
+        if (!file) {
+            return res.status(400).json({ ok: false, error: "No se envió archivo" });
+        }
+
+        // Validar que sea específicamente un PDF
+        const validation = FileUploadService.validatePdfFile(file);
+        if (!validation.valid) {
+            return res.status(400).json({ ok: false, error: validation.error });
+        }
+
+        // Subir archivo usando el servicio unificado
+        const result = await FileUploadService.uploadFile(file);
+        
+        if (result.success) {
+            return res.json({ ok: true, url: result.url });
+        } else {
+            return res.status(500).json({ ok: false, error: result.message });
+        }
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ ok: false, error: "Error subiendo PDF" });
+    }
+});
+
+// Endpoint general (mantener compatibilidad)
+router.post("/upload", FileUploadService.getMulterConfig().single("file"), async (req, res) => {
+    try {
+        const file = req.file;
+        if (!file) {
+            return res.status(400).json({ ok: false, error: "No se envió archivo" });
+        }
+
+        // Validar archivo
+        const validation = FileUploadService.validateFile(file);
+        if (!validation.valid) {
+            return res.status(400).json({ ok: false, error: validation.error });
+        }
+
+        // Subir archivo usando el servicio unificado
+        const result = await FileUploadService.uploadFile(file);
+        
+        if (result.success) {
+            return res.json({ ok: true, url: result.url });
+        } else {
+            return res.status(500).json({ ok: false, error: result.message });
+        }
     } catch (error) {
         console.error(error);
         res.status(500).json({ ok: false, error: "Error subiendo archivo" });
