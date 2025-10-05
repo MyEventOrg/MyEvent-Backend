@@ -12,6 +12,64 @@ export interface CreateEventoResponse {
     message?: string;
 }
 
+// Utility class para manejo de fechas
+class DateUtils {
+    /**
+     * Parsea una fecha de evento usando UTC para evitar problemas de zona horaria
+     * @param dateString - String de fecha en formato YYYY-MM-DD
+     * @returns Date object en UTC
+     */
+    static parseEventDate(dateString: string): Date {
+        // Usar Date.parse con formato ISO para garantizar UTC
+        // Agregar 'T00:00:00.000Z' para forzar UTC
+        const isoString = `${dateString}T00:00:00.000Z`;
+        return new Date(isoString);
+    }
+
+    /**
+     * Obtiene la fecha actual normalizada en UTC (sin horas)
+     * @returns Date object con fecha actual en UTC sin horas
+     */
+    static getTodayNormalized(): Date {
+        const today = new Date();
+        // Crear fecha en UTC usando UTC methods
+        return new Date(Date.UTC(
+            today.getUTCFullYear(),
+            today.getUTCMonth(),
+            today.getUTCDate(),
+            0, 0, 0, 0
+        ));
+    }
+
+    /**
+     * Obtiene la fecha y hora actual en zona horaria de Perú (UTC-5)
+     * Forzando que se guarde como la fecha correcta sin conversión UTC
+     * @returns Date object que al guardarse mantenga la fecha local de Perú
+     */
+    static getCurrentDateTime(): Date {
+        // Obtener la fecha actual en Perú
+        const nowInPeru = new Date().toLocaleString("en-US", {
+            timeZone: "America/Lima",
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+        });
+        
+        // Parsear los componentes: "10/04/2025, 23:20:36"
+        const [datePart, timePart] = nowInPeru.split(', ');
+        const [month, day, year] = datePart.split('/').map(Number);
+        const [hour, minute, second] = timePart.split(':').map(Number);
+        
+        // Crear fecha UTC que cuando se muestre localmente sea la fecha de Perú
+        // Necesitamos crear una fecha que al convertirse a UTC mantenga el día correcto
+        return new Date(Date.UTC(year, month - 1, day, hour, minute, second));
+    }
+}
+
 // Patrón Strategy 
 interface ValidationStrategy {
     validate(data: CreateEventoRequestDTO): { valid: boolean; errors: string[] };
@@ -35,12 +93,20 @@ class BasicEventoValidation implements ValidationStrategy {
             errors.push("La descripción corta no puede exceder 200 caracteres");
         }
 
+        // Validación para descripción larga
+        if (!data.descripcion_larga || data.descripcion_larga.trim().length < 25) {
+            errors.push("La descripción larga debe tener al menos 25 caracteres");
+        }
+        if (data.descripcion_larga && data.descripcion_larga.length > 1000) {
+            errors.push("La descripción larga no puede exceder 1000 caracteres");
+        }
+
         if (!data.fecha_evento) {
             errors.push("La fecha del evento es requerida");
         } else {
-            const eventDate = new Date(data.fecha_evento);
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
+            // Usar la utilidad de parsing para fechas
+            const eventDate = DateUtils.parseEventDate(data.fecha_evento);
+            const today = DateUtils.getTodayNormalized();
             
             if (eventDate < today) {
                 errors.push("La fecha del evento no puede ser anterior a hoy");
@@ -118,8 +184,8 @@ class EventoService {
                 titulo: data.titulo.trim(),
                 descripcion_corta: data.descripcion_corta.trim(),
                 descripcion_larga: data.descripcion_larga?.trim() || null,
-                fecha_evento: new Date(data.fecha_evento),
-                fecha_creacion_evento: new Date(),
+                fecha_evento: DateUtils.parseEventDate(data.fecha_evento),
+                fecha_creacion_evento: DateUtils.getCurrentDateTime(), // Usar fecha controlada
                 hora: data.hora,
                 tipo_evento: data.tipo_evento,
                 ubicacion: data.ubicacion?.trim() || null,
@@ -135,13 +201,13 @@ class EventoService {
                     ciudad: ciudad,
                     distrito: distrito || undefined
                 }),
-                url_recurso: data.url_recurso || null, // ✅ AGREGADO EXPLÍCITAMENTE
-                estado_evento: "pendiente", // Estado inicial
+                url_recurso: data.url_recurso || null, 
+                estado_evento: "pendiente", 
                 categoria_id: data.categoria_id || null,
                 url_imagen: data.url_imagen?.trim() || null,
             };
 
-            // 5. Crear el evento en la base de datos
+            // Crear el evento en la base de datos
             const evento = await EventoDAO.create(eventoData);
 
             if (!evento) {

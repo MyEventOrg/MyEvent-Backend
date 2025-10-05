@@ -105,6 +105,7 @@ export type EventoCreationAttributes = Optional<
   | "url_direccion"
   | "url_recurso"
   | "categoria_id"
+  | "fecha_creacion_evento"
 >;
 
 export class Evento
