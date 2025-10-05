@@ -1,28 +1,66 @@
 import { Request, Response } from "express";
-import CategoriaDAO from "../DAO/categoria";
+import { 
+    ControllerFacade, 
+    ResponseType, 
+    ArrayAdapter, 
+    DAOToResponseAdapter 
+} from "./base/ControllerInfrastructure";
+import { 
+    GetCategoriasCommand, 
+    CategoriaAdapter, 
+    LoggingCommandDecorator, 
+    CacheCommandDecorator 
+} from "./base/Commands";
 
 class CategoriaController {
-    static async getCategorias(req: Request, res: Response) {
+    /*
+     Obtener todas las categorías 
+     */
+    static async getCategorias(req: Request, res: Response): Promise<Response> {
+        //comando base
+        const baseCommand = new GetCategoriasCommand(req, res);
+        
+        // decorator 
+        const decoratedCommand = new LoggingCommandDecorator(
+            new CacheCommandDecorator(baseCommand, 'categorias_all')
+        );
+
+        //adapter 
+        const arrayAdapter = new ArrayAdapter(
+            new DAOToResponseAdapter(CategoriaAdapter.adapt)
+        );
+
+        //facade
+        return await ControllerFacade.handleOperation(req, res, {
+            command: decoratedCommand,
+            adapter: arrayAdapter,
+            successMessage: 'Categorías obtenidas exitosamente'
+        });
+    }
+
+    /*
+    factory para respuestas rapidas
+     */
+    static async getCategoriasSimple(req: Request, res: Response): Promise<Response> {
         try {
-            const categorias = await CategoriaDAO.findAll();
+            const command = new GetCategoriasCommand(req, res);
+            const categorias = await command.execute();
             
-            if (!categorias) {
-                return res.json({ success: true, data: [] });
-            }
+            const adaptedData = categorias.map(CategoriaAdapter.adapt);
             
-            // Convertir a formato plano 
-            const categoriasData = categorias.map((categoria: any) => ({
-                categoria_id: categoria.categoria_id || categoria.get('categoria_id'),
-                nombre: categoria.nombre || categoria.get('nombre')
-            }));
-            
-            return res.json({ success: true, data: categoriasData });
-        } catch (error: any) {
-            console.error("Error al obtener categorías:", error);
-            return res.status(500).json({ 
-                success: false, 
-                message: "Error interno del servidor" 
-            });
+            return ControllerFacade.sendResponse(
+                res, 
+                ResponseType.SUCCESS, 
+                adaptedData, 
+                'Categorías obtenidas'
+            );
+        } catch (error) {
+            return ControllerFacade.sendResponse(
+                res, 
+                ResponseType.ERROR, 
+                null, 
+                'Error al obtener categorías'
+            );
         }
     }
 }
