@@ -29,6 +29,10 @@ class JWTAuthenticationStrategy implements AuthenticationStrategy {
         const user = await UsuarioDAO.findByEmail(credentials.email);
         if (!user) throw new Error("Usuario no encontrado");
 
+        if (!user.activo) {
+            throw new Error("El usuario no está activo");
+        }
+
         const isMatch = await bcrypt.compare(credentials.password, user.contrasena);
         if (!isMatch) throw new Error("Contraseña incorrecta");
 
@@ -44,6 +48,7 @@ class JWTAuthenticationStrategy implements AuthenticationStrategy {
         return jwt.sign(payload, JWT_SECRET);
     }
 }
+
 
 class AuthenticationContext {
     constructor(private strategy: AuthenticationStrategy) { }
