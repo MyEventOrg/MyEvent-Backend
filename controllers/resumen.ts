@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { ControllerFacade, ResponseType, BaseCommand,IterableCollection } from "./base/ControllerInfrastructure";
+import { ControllerFacade, ResponseType, BaseCommand, IterableCollection } from "./base/ControllerInfrastructure";
 import { LoggingCommandDecorator } from "./base/Commands";
 
 
@@ -24,7 +24,7 @@ class ResumenAggregate {
     private eventosAsistiendo: any[] = [];
     private eventosGuardados: any[] = [];
 
-    constructor(private usuario_id: number) {}
+    constructor(private usuario_id: number) { }
 
     setEventosCreados(eventos: any[]): ResumenAggregate {
         this.eventosCreados = eventos;
@@ -78,7 +78,8 @@ class ResumenAggregate {
             ubicacion: evento.ubicacion,
             ciudad: evento.ciudad,
             distrito: evento.distrito,
-            url_imagen: evento.url_imagen
+            url_imagen: evento.url_imagen,
+            url_direccion: evento.url_direccion
         };
     }
 }
@@ -135,12 +136,12 @@ class ResumenController {
         //validar usuario_id
         const usuarioRaw = (req.params.usuarioId ?? req.params.id ?? req.query.usuarioId ?? req.body.usuario_id) as any;
         const usuario_id = Number(usuarioRaw);
-        
+
         if (!usuario_id || Number.isNaN(usuario_id)) {
             return ControllerFacade.sendResponse(
-                res, 
-                ResponseType.VALIDATION_ERROR, 
-                null, 
+                res,
+                ResponseType.VALIDATION_ERROR,
+                null,
                 "usuario_id requerido y numérico"
             );
         }
