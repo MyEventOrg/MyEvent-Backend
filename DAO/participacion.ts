@@ -1,7 +1,7 @@
 import BaseRepository from "../repository/base";
 import { Participacion } from "../configs/models";
 import { Op } from "sequelize";
-const participacionRepository = new BaseRepository(Participacion);
+const participacionRepository = new BaseRepository<Participacion>(Participacion);
 
 class ParticipacionDAO {
   static async findAll() {

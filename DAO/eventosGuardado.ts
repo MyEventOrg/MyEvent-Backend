@@ -1,7 +1,7 @@
 import BaseRepository from "../repository/base";
 import { EventosGuardado } from "../configs/models";
 
-const eventosGuardadoRepository = new BaseRepository(EventosGuardado);
+const eventosGuardadoRepository = new BaseRepository<EventosGuardado>(EventosGuardado);
 
 class EventosGuardadoDAO {
   static async findAll() {

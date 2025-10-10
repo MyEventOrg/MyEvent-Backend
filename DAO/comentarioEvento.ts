@@ -1,7 +1,7 @@
 import BaseRepository from "../repository/base";
 import { ComentarioEvento } from "../configs/models";
 
-const comentarioEventoRepository = new BaseRepository(ComentarioEvento);
+const comentarioEventoRepository = new BaseRepository<ComentarioEvento>(ComentarioEvento);
 
 class ComentarioEventoDAO {
   static async findAll() {

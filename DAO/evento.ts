@@ -1,7 +1,7 @@
 import BaseRepository from "../repository/base";
 import { Evento } from "../configs/models";
 import { Op } from "sequelize";
-const eventoRepository = new BaseRepository(Evento);
+const eventoRepository = new BaseRepository<Evento>(Evento);
 
 class EventoDAO {
   static async findAll() {

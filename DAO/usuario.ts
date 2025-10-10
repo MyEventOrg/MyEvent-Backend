@@ -2,7 +2,8 @@ import BaseRepository from "../repository/base";
 import { Usuario } from "../configs/models";
 import { Op } from "sequelize";
 
-const usuarioRepository = new BaseRepository(Usuario);
+const usuarioRepository = new BaseRepository<Usuario>(Usuario);
+
 
 class UsuarioDAO {
   static async findAll() {
@@ -13,8 +14,8 @@ class UsuarioDAO {
     return usuarioRepository.create(data);
   }
 
-  static async findOne(id: number) {
-    return usuarioRepository.findOne(id);
+  static async findOne(id: number): Promise<Usuario | null> {
+    return Usuario.findByPk(id);
   }
 
   static async update(id: number, data: any) {

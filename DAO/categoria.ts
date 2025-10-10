@@ -1,7 +1,7 @@
 import BaseRepository from "../repository/base";
 import { Categoria } from "../configs/models";
 
-const categoriaRepository = new BaseRepository(Categoria);
+const categoriaRepository = new BaseRepository<Categoria>(Categoria);
 
 class CategoriaDAO {
   static async findAll() {

@@ -16,4 +16,6 @@ router.get("/usuarios", UsuarioController.getUsuarios);
 
 router.put("/usuarios/:id/estado", UsuarioController.changeActivation);
 
+router.get("/check-status", UsuarioController.checkStatus);
+
 export default router;

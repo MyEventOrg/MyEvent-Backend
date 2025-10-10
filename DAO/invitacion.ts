@@ -1,28 +1,28 @@
 import BaseRepository from "../repository/base";
-import { Participacion } from "../configs/models";
+import { Invitacion } from "../configs/models";
 
-const participacionRepository = new BaseRepository(Participacion);
+const invitacionRepository = new BaseRepository<Invitacion>(Invitacion);
 
-class ParticipacionDAO {
+class InvitacionDAO {
   static async findAll() {
-    return participacionRepository.findAll();
+    return invitacionRepository.findAll();
   }
 
   static async create(data: any) {
-    return participacionRepository.create(data);
+    return invitacionRepository.create(data);
   }
 
   static async findOne(id: number) {
-    return participacionRepository.findOne(id);
+    return invitacionRepository.findOne(id);
   }
 
   static async update(id: number, data: any) {
-    return participacionRepository.update(id, data);
+    return invitacionRepository.update(id, data);
   }
 
   static async remove(id: number) {
-    return participacionRepository.remove(id);
+    return invitacionRepository.remove(id);
   }
 }
 
-export default ParticipacionDAO;
+export default InvitacionDAO;

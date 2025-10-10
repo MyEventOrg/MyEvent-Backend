@@ -268,6 +268,40 @@ class UsuarioController {
             successMessage: `Usuario ${id} actualizado correctamente`
         });
     }
+
+    static async checkStatus(req: Request, res: Response): Promise<Response> {
+        try {
+            const rawAuth = req.headers.authorization;
+            const bearer = rawAuth && rawAuth.startsWith("Bearer ") ? rawAuth.slice(7) : undefined;
+            const token = (req as any).cookies?.token || bearer; // soporta cookie o header
+
+            if (!token) {
+                return ControllerFacade.sendResponse(res, ResponseType.UNAUTHORIZED, null, "No autenticado");
+            }
+
+            const decoded: any = jwt.verify(token, JWT_SECRET);
+            const user = await UsuarioDAO.findOne(decoded.usuario_id);
+
+            if (!user) {
+                return ControllerFacade.sendResponse(res, ResponseType.NOT_FOUND, null, "Usuario no encontrado");
+            }
+
+            if (!user.activo) {
+                return ControllerFacade.sendResponse(res, ResponseType.UNAUTHORIZED, null, "Usuario inactivo");
+            }
+
+            return ControllerFacade.sendResponse(
+                res,
+                ResponseType.SUCCESS,
+                { activo: user.activo, usuario_id: user.usuario_id, rol: user.rol },
+                "Usuario activo"
+            );
+        } catch (error) {
+            const msg = error instanceof Error ? error.message : "Error al verificar estado";
+            return ControllerFacade.sendResponse(res, ResponseType.ERROR, null, msg);
+        }
+    }
+
 }
 
 export default UsuarioController;
