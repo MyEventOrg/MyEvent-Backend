@@ -158,7 +158,6 @@ class EventoController {
      * Maneja tanto imágenes como archivos PDF usando validaciones específicas
      */
     static createEvento = [
-        // Middleware para manejar archivos con validaciones específicas
         FileUploadService.getMulterConfig().fields([
             { name: 'pdf', maxCount: 1 },
             { name: 'recurso', maxCount: 1 },
@@ -167,19 +166,16 @@ class EventoController {
         
         async (req: Request, res: Response) => {
             try {
-                // Extraer usuario_id
                 const usuario_id = req.body.usuario_id || (req as any).user?.usuario_id;
                 
-                let pdfUrl = req.body.url_recurso; // URL existente si se proporciona
+                let pdfUrl = req.body.url_recurso;
                 
-                // Obtener el archivo PDF de cualquier campo
                 let pdfFile = req.file;
                 if (!pdfFile && (req as any).files) {
                     const files = (req as any).files;
                     pdfFile = files.pdf?.[0] || files.recurso?.[0] || files.file?.[0];
                 }
                 
-                // Si hay archivo PDF, validarlo específicamente como PDF y subirlo
                 if (pdfFile) {
                     const validation = FileUploadService.validatePdfFile(pdfFile);
                     if (!validation.valid) {
@@ -213,13 +209,12 @@ class EventoController {
                     ciudad: req.body.ciudad,
                     distrito: req.body.distrito,
                     url_direccion: req.body.url_direccion,
-                    url_imagen: req.body.url_imagen, // ✅ Mantener imagen del sistema original
-                    url_recurso: pdfUrl, // ✅ Incluir la URL del PDF
+                    url_imagen: req.body.url_imagen,
+                    url_recurso: pdfUrl,
                     categoria_id: req.body.categoria_id ? parseInt(req.body.categoria_id) : undefined,
                     usuario_id: usuario_id
                 };
 
-                // Usar el servicio para crear el evento
                 const eventoService = new EventoService();
                 const result = await eventoService.createEvento(eventoData);
 

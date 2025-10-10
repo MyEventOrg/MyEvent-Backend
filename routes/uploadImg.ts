@@ -1,4 +1,3 @@
-// routes/upload.ts
 import { Router } from "express";
 import { FileUploadService } from "../helpers/fileUpload";
 
