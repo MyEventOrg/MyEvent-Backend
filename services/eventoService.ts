@@ -2,9 +2,27 @@
 import EventoDAO from "../DAO/evento";
 import ParticipacionDAO from "../DAO/participacion";
 import { EventoCreationAttributes } from "../configs/models";
-import { CreateEventoRequestDTO } from "../types/evento";
 import { GoogleMapsHelper } from "../helpers/googleMaps";
 import { GeocodingService } from "../helpers/geocoding";
+
+export interface CreateEventoRequestDTO {
+    titulo: string;
+    descripcion_corta: string;
+    descripcion_larga?: string;
+    fecha_evento: string;
+    hora: string;
+    tipo_evento: "publico" | "privado";
+    ubicacion?: string;
+    latitud?: string;
+    longitud?: string;
+    ciudad?: string;
+    distrito?: string;
+    url_direccion?: string;
+    url_recurso?: string;
+    categoria_id?: number;
+    usuario_id: number;
+    url_imagen?: string;
+}
 
 export interface CreateEventoResponse {
     success: boolean;
