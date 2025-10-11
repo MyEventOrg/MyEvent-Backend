@@ -1,131 +1,108 @@
 import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
-import {
-    ControllerFacade,
-    ResponseType,
-    ValidationContext,
-    RequiredFieldsValidation,
-    EmailValidation,
-    DAOToResponseAdapter
-} from "./base/ControllerInfrastructure";
-import {
-    GetUserByIdCommand,
-    LoginCommand,
-    LoggingCommandDecorator
-} from "./base/Commands";
 import UsuarioDAO from "../DAO/usuario";
 
 const JWT_SECRET = "w93nf93nfw94f0w9fn39f0wf_uf9834fh94hf9h3h9h39fh39";
 
-
-interface AuthenticationStrategy {
-    authenticate(credentials: any): Promise<any>;
-    generateToken(user: any): string;
-}
-
-class JWTAuthenticationStrategy implements AuthenticationStrategy {
-    async authenticate(credentials: { email: string; password: string }): Promise<any> {
-        const user = await UsuarioDAO.findByEmail(credentials.email);
-        if (!user) throw new Error("Usuario no encontrado");
-
-        if (!user.activo) {
-            throw new Error("El usuario no está activo");
-        }
-
-        const isMatch = await bcrypt.compare(credentials.password, user.contrasena);
-        if (!isMatch) throw new Error("Contraseña incorrecta");
-
-        return user;
-    }
-
-    generateToken(user: any): string {
-        const payload = {
-            usuario_id: user.usuario_id,
-            apodo: user.apodo,
-            rol: user.rol,
-        };
-        return jwt.sign(payload, JWT_SECRET);
-    }
-}
-
-
-class AuthenticationContext {
-    constructor(private strategy: AuthenticationStrategy) { }
-
-    async login(credentials: any): Promise<{ user: any; token: string }> {
-        const user = await this.strategy.authenticate(credentials);
-        const token = this.strategy.generateToken(user);
-        return { user, token };
-    }
-}
-
-
-
-class UserAdapter {
-    static adapt(user: any) {
-        return {
-            usuario_id: user.usuario_id,
-            apodo: user.apodo,
-            email: user.correo,
-            rol: user.rol,
-            activo: user.activo,
-        };
-    }
-}
-
-
-class LogoutCommand extends LoginCommand {
-    async execute(): Promise<any> {
-        return { success: true, message: "Sesión cerrada exitosamente" };
-    }
-}
-
 class UsuarioController {
-    private static authContext = new AuthenticationContext(new JWTAuthenticationStrategy());
 
+    // ==========================
+    // 1. OBTENER USUARIO POR ID
+    // ==========================
     static async getusuarioById(req: Request, res: Response): Promise<Response> {
-        const { id } = req.params;
-
-        if (!id || isNaN(Number(id))) {
-            return ControllerFacade.sendResponse(
-                res,
-                ResponseType.VALIDATION_ERROR,
-                null,
-                "ID de usuario inválido"
-            );
-        }
-
-        const command = new LoggingCommandDecorator(
-            new GetUserByIdCommand(req, res, Number(id))
-        );
-
-        const adapter = new DAOToResponseAdapter(UserAdapter.adapt);
-
-        return await ControllerFacade.handleOperation(req, res, {
-            command,
-            adapter,
-            successMessage: "Usuario obtenido exitosamente"
-        });
-    }
-
-    static async iniciarSesion(req: Request, res: Response): Promise<Response> {
-        const validation = new ValidationContext()
-            .addStrategy(new RequiredFieldsValidation(['email', 'password']))
-            .addStrategy(new EmailValidation());
-
         try {
-            const validationResult = validation.validateAll(req.body);
-            if (!validationResult.isValid) {
-                return ControllerFacade.sendResponse(
-                    res,
-                    ResponseType.VALIDATION_ERROR,
-                    validationResult.errors,
-                    "Errores de validación"
-                );
+            const { id } = req.params;
+            if (!id || isNaN(Number(id))) {
+                return res.status(400).json({
+                    success: false,
+                    message: "ID de usuario inválido"
+                });
             }
 
-            const { user, token } = await UsuarioController.authContext.login(req.body);
+            const user = await UsuarioDAO.findOne(Number(id));
+            if (!user) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Usuario no encontrado"
+                });
+            }
+
+            return res.status(200).json({
+                success: true,
+                message: "Usuario obtenido exitosamente",
+                data: {
+                    usuario_id: user.usuario_id,
+                    apodo: user.apodo,
+                    email: user.correo,
+                    rol: user.rol,
+                    activo: user.activo
+                }
+            });
+
+        } catch (error) {
+            console.error("Error al obtener usuario por ID:", error);
+            return res.status(500).json({
+                success: false,
+                message: "Error interno del servidor"
+            });
+        }
+    }
+
+    // ==========================
+    // 2. INICIAR SESIÓN
+    // ==========================
+    static async iniciarSesion(req: Request, res: Response): Promise<Response> {
+        try {
+            const { email, password } = req.body;
+
+            // Validaciones manuales
+            if (!email || !password) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Email y contraseña son requeridos"
+                });
+            }
+
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Formato de email inválido"
+                });
+            }
+
+            const user = await UsuarioDAO.findByEmail(email);
+            if (!user) {
+                return res.status(401).json({
+                    success: false,
+                    message: "Usuario o contraseña incorrectos"
+                });
+            }
+
+            if (!user.activo) {
+                return res.status(401).json({
+                    success: false,
+                    message: "El usuario no está activo"
+                });
+            }
+
+            const isMatch = await bcrypt.compare(password, user.contrasena);
+            if (!isMatch) {
+                return res.status(401).json({
+                    success: false,
+                    message: "Usuario o contraseña incorrectos"
+                });
+            }
+
+            const token = jwt.sign(
+                {
+                    usuario_id: user.usuario_id,
+                    apodo: user.apodo,
+                    rol: user.rol
+                },
+                JWT_SECRET
+            );
 
             res.cookie("token", token, {
                 httpOnly: false,
@@ -134,68 +111,92 @@ class UsuarioController {
                 path: "/",
             });
 
-            return ControllerFacade.sendResponse(
-                res,
-                ResponseType.SUCCESS,
-                { token, user: UserAdapter.adapt(user) },
-                "Inicio de sesión exitoso"
-            );
+            return res.status(200).json({
+                success: true,
+                message: "Inicio de sesión exitoso",
+                data: {
+                    token,
+                    user: {
+                        usuario_id: user.usuario_id,
+                        apodo: user.apodo,
+                        email: user.correo,
+                        rol: user.rol,
+                        activo: user.activo
+                    }
+                }
+            });
 
         } catch (error) {
-            const message = error instanceof Error ? error.message : "Error en el servidor al iniciar sesión";
-            return ControllerFacade.sendResponse(
-                res,
-                ResponseType.UNAUTHORIZED,
-                null,
-                message
-            );
+            console.error("Error al iniciar sesión:", error);
+            return res.status(500).json({
+                success: false,
+                message: "Error en el servidor al iniciar sesión"
+            });
         }
     }
 
+    // ==========================
+    // 3. CERRAR SESIÓN
+    // ==========================
     static async cerrarSesion(req: Request, res: Response): Promise<Response> {
-        const command = new LogoutCommand(req, res, '', '');
+        try {
+            res.clearCookie("token", {
+                httpOnly: false,
+                secure: false,
+                sameSite: "lax",
+                path: "/",
+            });
 
-        res.clearCookie("token", {
-            httpOnly: false,
-            secure: false,
-            sameSite: "lax",
-            path: "/",
-        });
-
-        return await ControllerFacade.handleOperation(req, res, {
-            command,
-            successMessage: "Sesión cerrada exitosamente"
-        });
+            return res.status(200).json({
+                success: true,
+                message: "Sesión cerrada exitosamente"
+            });
+        } catch (error) {
+            console.error("Error al cerrar sesión:", error);
+            return res.status(500).json({
+                success: false,
+                message: "Error interno del servidor"
+            });
+        }
     }
 
+    // ==========================
+    // 4. CREAR USUARIO
+    // ==========================
     static async crearUsuario(req: Request, res: Response): Promise<Response> {
-        const validation = new ValidationContext()
-            .addStrategy(new RequiredFieldsValidation(['nombres', 'apellidos', 'apodo', 'email', 'password']))
-            .addStrategy(new EmailValidation());
-
         try {
-            const validationResult = validation.validateAll(req.body);
-            if (!validationResult.isValid) {
-                return ControllerFacade.sendResponse(
-                    res,
-                    ResponseType.VALIDATION_ERROR,
-                    validationResult.errors,
-                    "Errores de validación"
-                );
-            }
-
             const { nombres, apellidos, apodo, email, password } = req.body;
 
-            const passwordRegex =
-                /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&.#_])[A-Za-z\d@$!%*?&.#_]{8,}$/;
+            // Validaciones manuales
+            if (!nombres || !apellidos || !apodo || !email || !password) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Todos los campos son requeridos"
+                });
+            }
 
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Formato de email inválido"
+                });
+            }
+
+            const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&.#_])[A-Za-z\d@$!%*?&.#_]{8,}$/;
             if (!passwordRegex.test(password)) {
-                return ControllerFacade.sendResponse(
-                    res,
-                    ResponseType.VALIDATION_ERROR,
-                    null,
-                    "La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial (@$!%*?&.#_)"
-                );
+                return res.status(400).json({
+                    success: false,
+                    message: "La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial (@$!%*?&.#_)"
+                });
+            }
+
+            const usuarioExistente = await UsuarioDAO.findByEmail(email);
+            if (usuarioExistente) {
+                return res.status(400).json({
+                    success: false,
+                    message: "El email ya está registrado"
+                });
             }
 
             const hashedPassword = await bcrypt.hash(password, 10);
@@ -213,95 +214,75 @@ class UsuarioController {
                 apodo,
             });
 
-            return ControllerFacade.sendResponse(
-                res,
-                ResponseType.SUCCESS,
-                nuevoUsuario,
-                "Usuario creado exitosamente"
-            );
+            return res.status(201).json({
+                success: true,
+                message: "Usuario creado exitosamente",
+                data: nuevoUsuario
+            });
 
         } catch (error) {
-            const message = error instanceof Error ? error.message : "Error en el servidor al crear usuario";
-            return ControllerFacade.sendResponse(res, ResponseType.ERROR, null, message);
+            console.error("Error al crear usuario:", error);
+            return res.status(500).json({
+                success: false,
+                message: "Error en el servidor al crear usuario"
+            });
         }
     }
+    static async getUsuarios(req: Request, res: Response) {
+        try {
+            const page = parseInt(req.query.page as string) || 1;
+            const limit = 10;
+            const search = (req.query.search as string) || "";
 
-    static async getUsuarios(req: Request, res: Response): Promise<Response> {
-        const command = new class extends LoginCommand {
-            async execute(): Promise<any> {
-                const page = parseInt(this.req.query.page as string) || 1;
-                const limit = 10;
-                const search = (this.req.query.search as string) || "";
+            const result = await UsuarioDAO.findPaginatedUsers(page, limit, search);
 
-                return await UsuarioDAO.findPaginatedUsers(page, limit, search);
-            }
-        }(req, res, '', '');
-
-        return await ControllerFacade.handleOperation(req, res, {
-            command,
-            successMessage: "Usuarios obtenidos exitosamente"
-        });
+            return res.json({
+                data: result.data,
+                page: result.page,
+                total: result.total,
+                totalPages: result.totalPages,
+            });
+        } catch (error) {
+            console.error(error);
+            return res.status(500).json({ error: "Error al obtener usuarios" });
+        }
     }
-
 
     static async changeActivation(req: Request, res: Response): Promise<Response> {
-        const { id } = req.params;
-        const { activo } = req.body;
-
-        if (activo !== 0 && activo !== 1) {
-            return ControllerFacade.sendResponse(
-                res,
-                ResponseType.VALIDATION_ERROR,
-                null,
-                "El estado activo debe ser 0 o 1"
-            );
-        }
-
-        const command = new class extends LoginCommand {
-            async execute(): Promise<any> {
-                return await UsuarioDAO.update(Number(id), { activo });
-            }
-        }(req, res, '', '');
-
-        return await ControllerFacade.handleOperation(req, res, {
-            command,
-            successMessage: `Usuario ${id} actualizado correctamente`
-        });
-    }
-
-    static async checkStatus(req: Request, res: Response): Promise<Response> {
         try {
-            const rawAuth = req.headers.authorization;
-            const bearer = rawAuth && rawAuth.startsWith("Bearer ") ? rawAuth.slice(7) : undefined;
-            const token = (req as any).cookies?.token || bearer; // soporta cookie o header
+            const { id } = req.params;
+            const { activo } = req.body;
 
-            if (!token) {
-                return ControllerFacade.sendResponse(res, ResponseType.UNAUTHORIZED, null, "No autenticado");
+            if (!id || isNaN(Number(id))) {
+                return res.status(400).json({
+                    success: false,
+                    message: "ID inválido"
+                });
             }
 
-            const decoded: any = jwt.verify(token, JWT_SECRET);
-            const user = await UsuarioDAO.findOne(decoded.usuario_id);
-
-            if (!user) {
-                return ControllerFacade.sendResponse(res, ResponseType.NOT_FOUND, null, "Usuario no encontrado");
+            if (activo !== 0 && activo !== 1) {
+                return res.status(400).json({
+                    success: false,
+                    message: "El estado activo debe ser 0 o 1"
+                });
             }
 
-            if (!user.activo) {
-                return ControllerFacade.sendResponse(res, ResponseType.UNAUTHORIZED, null, "Usuario inactivo");
-            }
+            const updated = await UsuarioDAO.update(Number(id), { activo });
 
-            return ControllerFacade.sendResponse(
-                res,
-                ResponseType.SUCCESS,
-                { activo: user.activo, usuario_id: user.usuario_id, rol: user.rol },
-                "Usuario activo"
-            );
+            return res.status(200).json({
+                success: true,
+                message: `Usuario ${id} actualizado correctamente`,
+                data: updated
+            });
+
         } catch (error) {
-            const msg = error instanceof Error ? error.message : "Error al verificar estado";
-            return ControllerFacade.sendResponse(res, ResponseType.ERROR, null, msg);
+            console.error("Error al actualizar usuario:", error);
+            return res.status(500).json({
+                success: false,
+                message: "Error interno del servidor"
+            });
         }
     }
-
 }
 
 export default UsuarioController;

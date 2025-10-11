@@ -2,21 +2,14 @@ import { Request, Response } from "express";
 import fs from "fs";
 import path from "path";
 import { transporter, MAIL } from "../configs/mailer";
-import {
-    ControllerFacade,
-    ResponseType,
-    ValidationContext,
-    RequiredFieldsValidation,
-    EmailValidation
-} from "./base/ControllerInfrastructure";
-import { SendVerificationCodeCommand, LoggingCommandDecorator } from "./base/Commands";
+import UsuarioDAO from "../DAO/usuario";
 
-//códigos de verificación
+// Almacén temporal de códigos de verificación
 const verificationStore = new Map<string, { code: string; expiresAt: number }>();
-const CODE_TTL_MS = 10 * 60 * 1000;
+const CODE_TTL_MS = 10 * 60 * 1000; // 10 minutos
 const MINUTES = CODE_TTL_MS / 60000;
 
-//cargar template
+// Cargar template de correo
 const TEMPLATE_PATH = path.join(process.cwd(), "templates", "codigoverificacion.html");
 let TEMPLATE_HTML: string;
 
@@ -26,155 +19,125 @@ try {
     throw new Error(`[EmailTemplate] No se pudo leer ${TEMPLATE_PATH}. Asegura que exista en runtime.`);
 }
 
+class NotificationController {
 
-// TEMPLATE METHOD para generar códigos
-abstract class CodeGenerator {
-    abstract generateCode(): string;
-    abstract getLength(): number;
-}
-
-class SixDigitCodeGenerator extends CodeGenerator {
-    generateCode(): string {
-        return Math.floor(100000 + Math.random() * 900000).toString();
-    }
-
-    getLength(): number {
-        return 6;
-    }
-}
-
-
-class SendEmailVerificationCommand extends SendVerificationCodeCommand {
-    constructor(req: Request, res: Response, email: string, private codeGenerator: CodeGenerator) {
-        super(req, res, email);
-    }
-
-    async execute(): Promise<any> {
-        const UsuarioDAO = require("../DAO/usuario").default;
-
+    // ==========================
+    // 1. ENVIAR CÓDIGO
+    // ==========================
+    static async enviarCodigoVerificacion(req: Request, res: Response): Promise<Response> {
         try {
-            const existe = await UsuarioDAO.findByEmail(this.email);
-            if (existe) {
-                return ControllerFacade.sendResponse(
-                    this.res,
-                    ResponseType.VALIDATION_ERROR,
-                    null,
-                    "El correo electrónico ya está registrado"
-                );
+            const { email } = req.body;
+
+            // Validación manual
+            if (!email || typeof email !== "string" || email.trim() === "") {
+                return res.status(400).json({
+                    success: false,
+                    message: "El email es requerido"
+                });
             }
 
-            const code = this.codeGenerator.generateCode();
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                return res.status(400).json({
+                    success: false,
+                    message: "El formato del email no es válido"
+                });
+            }
 
-            verificationStore.set(this.email.toLowerCase(), {
+            // Verificar si el usuario ya existe
+            const existe = await UsuarioDAO.findByEmail(email);
+            if (existe) {
+                return res.status(400).json({
+                    success: false,
+                    message: "El correo electrónico ya está registrado"
+                });
+            }
+
+            // Generar código (6 dígitos)
+            const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+            // Guardar en memoria con expiración
+            verificationStore.set(email.toLowerCase(), {
                 code,
                 expiresAt: Date.now() + CODE_TTL_MS,
             });
 
+            // Reemplazar variables en el template HTML
             const html = TEMPLATE_HTML
                 .replace(/{{CODE}}/g, code)
-                .replace(/{{EMAIL}}/g, this.email)
+                .replace(/{{EMAIL}}/g, email)
                 .replace(/{{MINUTES}}/g, String(MINUTES))
                 .replace(/{{YEAR}}/g, String(new Date().getFullYear()));
 
+            // Enviar correo
             await transporter.sendMail({
                 from: MAIL.FROM,
-                to: this.email,
+                to: email,
                 subject: "Tu código de verificación - MyEvent",
                 html,
             });
 
-            return { success: true, message: "Código enviado" };
-
-        } catch (error) {
-            const message = error instanceof Error ? error.message : "Error al enviar el código de verificación";
-            return ControllerFacade.sendResponse(
-                this.res,
-                ResponseType.ERROR,
-                null,
-                message
-            );
-        }
-    }
-}
-
-
-class VerifyEmailCommand extends SendVerificationCodeCommand {
-    constructor(req: Request, res: Response, email: string, private code: string) {
-        super(req, res, email);
-    }
-
-    async execute(): Promise<any> {
-        const rec = verificationStore.get(this.email.toLowerCase());
-        const now = Date.now();
-
-        if (!rec || now > rec.expiresAt || rec.code !== this.code) {
-            throw new Error("Código inválido o expirado");
-        }
-
-        verificationStore.delete(this.email.toLowerCase());
-
-        return { success: true, message: "Código verificado" };
-    }
-}
-
-class NotificationController {
-    private static codeGenerator = new SixDigitCodeGenerator();
-
-    static async enviarCodigoVerificacion(req: Request, res: Response): Promise<Response> {
-        const { email } = req.body;
-
-        const validation = new ValidationContext()
-            .addStrategy(new RequiredFieldsValidation(['email']))
-            .addStrategy(new EmailValidation());
-
-        try {
-            const command = new LoggingCommandDecorator(
-                new SendEmailVerificationCommand(req, res, email, NotificationController.codeGenerator)
-            );
-
-            return await ControllerFacade.handleOperation(req, res, {
-                validation,
-                command,
-                successMessage: "Código de verificación enviado exitosamente"
+            return res.status(200).json({
+                success: true,
+                message: "Código de verificación enviado exitosamente"
             });
 
-        } catch (error) {
-            const message = error instanceof Error ? error.message : "Error al enviar el código de verificación";
-            return ControllerFacade.sendResponse(
-                res,
-                ResponseType.ERROR,
-                null,
-                message
-            );
+        } catch (error: any) {
+            console.error("Error al enviar el código de verificación:", error);
+            return res.status(500).json({
+                success: false,
+                message: "Error al enviar el código de verificación"
+            });
         }
     }
 
+    // ==========================
+    // 2. VERIFICAR CÓDIGO
+    // ==========================
     static async verificarEmail(req: Request, res: Response): Promise<Response> {
-        const { email, code } = req.body;
-
-        const validation = new ValidationContext()
-            .addStrategy(new RequiredFieldsValidation(['email', 'code']))
-            .addStrategy(new EmailValidation());
-
         try {
-            const command = new LoggingCommandDecorator(
-                new VerifyEmailCommand(req, res, email, code)
-            );
+            const { email, code } = req.body;
 
-            return await ControllerFacade.handleOperation(req, res, {
-                validation,
-                command,
-                successMessage: "Email verificado exitosamente"
+            // Validaciones manuales
+            if (!email || typeof email !== "string" || email.trim() === "") {
+                return res.status(400).json({
+                    success: false,
+                    message: "El email es requerido"
+                });
+            }
+
+            if (!code || typeof code !== "string" || code.trim() === "") {
+                return res.status(400).json({
+                    success: false,
+                    message: "El código es requerido"
+                });
+            }
+
+            const rec = verificationStore.get(email.toLowerCase());
+            const now = Date.now();
+
+            // Validar existencia, expiración o código incorrecto
+            if (!rec || now > rec.expiresAt || rec.code !== code) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Código inválido o expirado"
+                });
+            }
+
+            // Eliminar el código usado
+            verificationStore.delete(email.toLowerCase());
+
+            return res.status(200).json({
+                success: true,
+                message: "Email verificado exitosamente"
             });
 
-        } catch (error) {
-            const message = error instanceof Error ? error.message : "Error al verificar el código de email";
-            return ControllerFacade.sendResponse(
-                res,
-                ResponseType.ERROR,
-                null,
-                message
-            );
+        } catch (error: any) {
+            console.error("Error al verificar el código:", error);
+            return res.status(500).json({
+                success: false,
+                message: "Error al verificar el código de email"
+            });
         }
     }
 }

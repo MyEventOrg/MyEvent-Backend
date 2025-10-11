@@ -4,9 +4,27 @@ import ParticipacionDAO from "../DAO/participacion";
 import UsuarioDAO from "../DAO/usuario";
 import CategoriaDAO from "../DAO/categoria";
 import EventoService from "../services/eventoService";
-import { CreateEventoRequestDTO } from "../types/evento";
+
 import { FileUploadService } from "../helpers/fileUpload";
 
+export interface CreateEventoRequestDTO {
+    titulo: string;
+    descripcion_corta: string;
+    descripcion_larga?: string;
+    fecha_evento: string;
+    hora: string;
+    tipo_evento: "publico" | "privado";
+    ubicacion?: string;
+    latitud?: string;
+    longitud?: string;
+    ciudad?: string;
+    distrito?: string;
+    url_direccion?: string;
+    url_recurso?: string;
+    categoria_id?: number;
+    usuario_id: number;
+    url_imagen?: string;
+}
 
 class EventoController {
     static async getEventosPublicos(req: Request, res: Response) {
@@ -163,19 +181,19 @@ class EventoController {
             { name: 'recurso', maxCount: 1 },
             { name: 'file', maxCount: 1 }
         ]),
-        
+
         async (req: Request, res: Response) => {
             try {
                 const usuario_id = req.body.usuario_id || (req as any).user?.usuario_id;
-                
+
                 let pdfUrl = req.body.url_recurso;
-                
+
                 let pdfFile = req.file;
                 if (!pdfFile && (req as any).files) {
                     const files = (req as any).files;
                     pdfFile = files.pdf?.[0] || files.recurso?.[0] || files.file?.[0];
                 }
-                
+
                 if (pdfFile) {
                     const validation = FileUploadService.validatePdfFile(pdfFile);
                     if (!validation.valid) {
@@ -184,7 +202,7 @@ class EventoController {
                             message: validation.error
                         });
                     }
-                    
+
                     const uploadResult = await FileUploadService.uploadFile(pdfFile);
                     if (!uploadResult.success) {
                         return res.status(500).json({
@@ -192,7 +210,7 @@ class EventoController {
                             message: uploadResult.message
                         });
                     }
-                    
+
                     pdfUrl = uploadResult.url;
                 }
 
@@ -226,9 +244,9 @@ class EventoController {
 
             } catch (error: any) {
                 console.error("Error en EventoController.createEvento:", error);
-                return res.status(500).json({ 
-                    success: false, 
-                    message: "Error interno del servidor" 
+                return res.status(500).json({
+                    success: false,
+                    message: "Error interno del servidor"
                 });
             }
         }

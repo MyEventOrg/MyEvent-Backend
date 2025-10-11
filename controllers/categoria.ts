@@ -1,66 +1,54 @@
 import { Request, Response } from "express";
-import { 
-    ControllerFacade, 
-    ResponseType, 
-    ArrayAdapter, 
-    DAOToResponseAdapter 
-} from "./base/ControllerInfrastructure";
-import { 
-    GetCategoriasCommand, 
-    CategoriaAdapter, 
-    LoggingCommandDecorator, 
-    CacheCommandDecorator 
-} from "./base/Commands";
+import CategoriaDAO from "../DAO/categoria";
 
 class CategoriaController {
-    /*
-     Obtener todas las categorías 
-     */
+
+    // Obtener todas las categorías (versión limpia)
     static async getCategorias(req: Request, res: Response): Promise<Response> {
-        //comando base
-        const baseCommand = new GetCategoriasCommand(req, res);
-        
-        // decorator 
-        const decoratedCommand = new LoggingCommandDecorator(
-            new CacheCommandDecorator(baseCommand, 'categorias_all')
-        );
+        try {
+            const categorias = await CategoriaDAO.findAll() || [];
 
-        //adapter 
-        const arrayAdapter = new ArrayAdapter(
-            new DAOToResponseAdapter(CategoriaAdapter.adapt)
-        );
 
-        //facade
-        return await ControllerFacade.handleOperation(req, res, {
-            command: decoratedCommand,
-            adapter: arrayAdapter,
-            successMessage: 'Categorías obtenidas exitosamente'
-        });
+            // Adaptación manual (antes era con Adapter)
+            const data = categorias.map((categoria: any) => ({
+                categoria_id: categoria.categoria_id || categoria.get("categoria_id"),
+                nombre: categoria.nombre || categoria.get("nombre"),
+            }));
+
+            return res.status(200).json({
+                success: true,
+                message: "Categorías obtenidas exitosamente",
+                data,
+            });
+        } catch (error: any) {
+            console.error("Error al obtener categorías:", error);
+            return res.status(500).json({
+                success: false,
+                message: "Error al obtener categorías",
+            });
+        }
     }
 
-    /*
-    factory para respuestas rapidas
-     */
+    // Versión simple (puedes dejar una sola versión si quieres)
     static async getCategoriasSimple(req: Request, res: Response): Promise<Response> {
         try {
-            const command = new GetCategoriasCommand(req, res);
-            const categorias = await command.execute();
-            
-            const adaptedData = categorias.map(CategoriaAdapter.adapt);
-            
-            return ControllerFacade.sendResponse(
-                res, 
-                ResponseType.SUCCESS, 
-                adaptedData, 
-                'Categorías obtenidas'
-            );
+            const categorias = await CategoriaDAO.findAll() || [];
+
+            const data = categorias.map((categoria: any) => ({
+                categoria_id: categoria.categoria_id || categoria.get("categoria_id"),
+                nombre: categoria.nombre || categoria.get("nombre"),
+            }));
+
+            return res.status(200).json({
+                success: true,
+                data,
+                message: "Categorías obtenidas",
+            });
         } catch (error) {
-            return ControllerFacade.sendResponse(
-                res, 
-                ResponseType.ERROR, 
-                null, 
-                'Error al obtener categorías'
-            );
+            return res.status(500).json({
+                success: false,
+                message: "Error al obtener categorías",
+            });
         }
     }
 }
