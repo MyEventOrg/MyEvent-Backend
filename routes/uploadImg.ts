@@ -11,15 +11,13 @@ router.post("/upload/image", FileUploadService.getImageMulterConfig().single("fi
             return res.status(400).json({ ok: false, error: "No se envió archivo" });
         }
 
-        // Validar que sea específicamente una imagen
         const validation = FileUploadService.validateImageFile(file);
         if (!validation.valid) {
             return res.status(400).json({ ok: false, error: validation.error });
         }
 
-        // Subir archivo usando el servicio unificado
         const result = await FileUploadService.uploadFile(file);
-        
+
         if (result.success) {
             return res.json({ ok: true, url: result.url });
         } else {
@@ -39,15 +37,13 @@ router.post("/upload/pdf", FileUploadService.getPdfMulterConfig().single("file")
             return res.status(400).json({ ok: false, error: "No se envió archivo" });
         }
 
-        // Validar que sea específicamente un PDF
         const validation = FileUploadService.validatePdfFile(file);
         if (!validation.valid) {
             return res.status(400).json({ ok: false, error: validation.error });
         }
 
-        // Subir archivo usando el servicio unificado
         const result = await FileUploadService.uploadFile(file);
-        
+
         if (result.success) {
             return res.json({ ok: true, url: result.url });
         } else {
@@ -67,15 +63,12 @@ router.post("/upload", FileUploadService.getMulterConfig().single("file"), async
             return res.status(400).json({ ok: false, error: "No se envió archivo" });
         }
 
-        // Validar archivo
         const validation = FileUploadService.validateFile(file);
         if (!validation.valid) {
             return res.status(400).json({ ok: false, error: validation.error });
         }
-
-        // Subir archivo usando el servicio unificado
         const result = await FileUploadService.uploadFile(file);
-        
+
         if (result.success) {
             return res.json({ ok: true, url: result.url });
         } else {

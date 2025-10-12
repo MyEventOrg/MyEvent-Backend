@@ -7,9 +7,6 @@ const JWT_SECRET = "w93nf93nfw94f0w9fn39f0wf_uf9834fh94hf9h3h9h39fh39";
 
 class UsuarioController {
 
-    // ==========================
-    // 1. OBTENER USUARIO POR ID
-    // ==========================
     static async getusuarioById(req: Request, res: Response): Promise<Response> {
         try {
             const { id } = req.params;
@@ -49,9 +46,7 @@ class UsuarioController {
         }
     }
 
-    // ==========================
-    // 2. INICIAR SESIÓN
-    // ==========================
+
     static async iniciarSesion(req: Request, res: Response): Promise<Response> {
         try {
             const { email, password } = req.body;
@@ -135,9 +130,7 @@ class UsuarioController {
         }
     }
 
-    // ==========================
-    // 3. CERRAR SESIÓN
-    // ==========================
+
     static async cerrarSesion(req: Request, res: Response): Promise<Response> {
         try {
             res.clearCookie("token", {
@@ -160,9 +153,7 @@ class UsuarioController {
         }
     }
 
-    // ==========================
-    // 4. CREAR USUARIO
-    // ==========================
+
     static async crearUsuario(req: Request, res: Response): Promise<Response> {
         try {
             const { nombres, apellidos, apodo, email, password } = req.body;

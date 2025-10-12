@@ -18,7 +18,6 @@ interface ResumenData {
     };
 }
 
-// Adaptador simple para homogeneizar eventos (sin usar Adapter Pattern)
 function adaptEvento(evento: any) {
     return {
         evento_id: evento.evento_id,
@@ -40,15 +39,6 @@ function uniq(arr: number[]) {
 }
 
 class ResumenController {
-    /**
-     * GET /resumen/:usuarioId
-     * Retorna:
-     * {
-     *   success: boolean,
-     *   message: string,
-     *   data: ResumenData
-     * }
-     */
     static async getMisEventosMisEventosAsistidosMisEventosGUardados(
         req: Request,
         res: Response

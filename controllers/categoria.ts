@@ -3,13 +3,11 @@ import CategoriaDAO from "../DAO/categoria";
 
 class CategoriaController {
 
-    // Obtener todas las categorías (versión limpia)
+    // Obtener todas las categorías
     static async getCategorias(req: Request, res: Response): Promise<Response> {
         try {
             const categorias = await CategoriaDAO.findAll() || [];
 
-
-            // Adaptación manual (antes era con Adapter)
             const data = categorias.map((categoria: any) => ({
                 categoria_id: categoria.categoria_id || categoria.get("categoria_id"),
                 nombre: categoria.nombre || categoria.get("nombre"),
@@ -29,7 +27,7 @@ class CategoriaController {
         }
     }
 
-    // Versión simple (puedes dejar una sola versión si quieres)
+    // Versión simple
     static async getCategoriasSimple(req: Request, res: Response): Promise<Response> {
         try {
             const categorias = await CategoriaDAO.findAll() || [];

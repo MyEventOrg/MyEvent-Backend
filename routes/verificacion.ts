@@ -1,5 +1,5 @@
 import { Router } from "express";
-import NotificationController from "../controllers/notificacion"; // ajusta la ruta
+import NotificationController from "../controllers/notificacion";
 
 const router = Router();
 
