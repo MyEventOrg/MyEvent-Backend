@@ -13,8 +13,9 @@ export interface UsuarioAttributes {
   activo: boolean;
   rol: string;         // ej: 'admin' | 'user'
   apodo?: string | null;
+  url_imagen?: string | null;
 }
-export type UsuarioCreationAttributes = Optional<UsuarioAttributes, "usuario_id" | "apodo">;
+export type UsuarioCreationAttributes = Optional<UsuarioAttributes, "usuario_id" | "apodo" | "url_imagen">;
 
 export class Usuario
   extends Model<UsuarioAttributes, UsuarioCreationAttributes>
@@ -27,6 +28,7 @@ export class Usuario
   public activo!: boolean;
   public rol!: string;
   public apodo?: string | null;
+  public url_imagen?: string | null;
 }
 
 Usuario.init(
@@ -39,6 +41,7 @@ Usuario.init(
     activo: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true },
     rol: { type: DataTypes.STRING(5), allowNull: false },
     apodo: { type: DataTypes.STRING(12), allowNull: true },
+    url_imagen: { type: DataTypes.STRING(300), allowNull: true },
   },
   { sequelize, tableName: "Usuario", timestamps: false }
 );

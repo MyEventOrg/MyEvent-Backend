@@ -94,7 +94,8 @@ class UsuarioController {
                 {
                     usuario_id: user.usuario_id,
                     apodo: user.apodo,
-                    rol: user.rol
+                    rol: user.rol,
+                    url_imagen: (user as any).url_imagen ?? null,
                 },
                 JWT_SECRET
             );
@@ -116,7 +117,8 @@ class UsuarioController {
                         apodo: user.apodo,
                         email: user.correo,
                         rol: user.rol,
-                        activo: user.activo
+                        activo: user.activo,
+                        url_imagen: (user as any).url_imagen ?? null,
                     }
                 }
             });
