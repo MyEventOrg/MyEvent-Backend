@@ -28,6 +28,84 @@ export interface CreateEventoRequestDTO {
 }
 
 class EventoController {
+
+    static async getEvento(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const eventoId = Number(id);
+
+            if (!eventoId || isNaN(eventoId)) {
+                return res.status(400).json({ success: false, message: "ID de evento requerido" });
+            }
+
+            // Obtener evento por ID
+            const evento = await EventoDAO.findOne(eventoId);
+            if (!evento) {
+                return res.status(404).json({ success: false, message: "Evento no encontrado" });
+            }
+
+            // Verificar estado del evento
+            const estadoEvento = evento.get("estado_evento");
+            if (!["activo", "vencido"].includes(estadoEvento)) {
+                return res.status(403).json({ success: false, message: "Este evento no está disponible actualmente" });
+            }
+
+            // Obtener organizador
+            const organizador = await ParticipacionDAO.findOrganizadorByEventoId(evento.get("evento_id"));
+            let organizadorInfo = null;
+
+            if (organizador) {
+                const usuario = await UsuarioDAO.findOne(organizador.usuario_id);
+                if (usuario) {
+                    organizadorInfo = {
+                        usuario_id: usuario.get("usuario_id"),
+                        nombreCompleto: usuario.get("nombreCompleto"),
+                        correo: usuario.get("correo"),
+                        apodo: usuario.get("apodo"),
+                    };
+                }
+            }
+
+            // Obtener categoría
+            const categoriaId = evento.get("categoria_id");
+            let categoriaInfo = null;
+
+            if (typeof categoriaId === "number") {
+                const categoria = await CategoriaDAO.findOne(categoriaId);
+                if (categoria) {
+                    categoriaInfo = {
+                        categoria_id: categoria.get("categoria_id"),
+                        nombre: categoria.get("nombre"),
+                    };
+                }
+            }
+
+            // Contar asistentes
+            const asistentes = await ParticipacionDAO.countAsistentesByEventoId(evento.get("evento_id"));
+
+            // Preparar respuesta
+            const eventoData = {
+                ...evento.toJSON(),
+                organizador: organizadorInfo,
+                categoria: categoriaInfo,
+                asistentes,
+            };
+
+            return res.status(200).json({
+                success: true,
+                data: eventoData,
+            });
+
+        } catch (error: any) {
+            console.error("Error en getEvento:", error);
+            return res.status(500).json({
+                success: false,
+                message: "Error al obtener el evento",
+            });
+        }
+    }
+
+
     static async getEventosPublicos(req: Request, res: Response) {
         try {
             const page = parseInt(req.query.page as string) || 1;

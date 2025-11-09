@@ -13,4 +13,7 @@ router.post("/eventos", EventoController.createEvento);
 
 router.get("/buscarEventos/:usuarioId", EventoController.getEventosFiltrados);
 
+router.get("/evento/:id", EventoController.getEvento);
+
+
 export default router;
