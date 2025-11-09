@@ -33,27 +33,56 @@ class EventoController {
         try {
             const { id } = req.params;
             const eventoId = Number(id);
+            const usuario_id = Number(req.query.usuario_id); // 👈 usuario_id por query
 
             if (!eventoId || isNaN(eventoId)) {
                 return res.status(400).json({ success: false, message: "ID de evento requerido" });
             }
 
-            // Obtener evento por ID
+            // 1️⃣ Obtener evento
             const evento = await EventoDAO.findOne(eventoId);
             if (!evento) {
                 return res.status(404).json({ success: false, message: "Evento no encontrado" });
             }
 
-            // Verificar estado del evento
+            // 2️⃣ Validar estado
             const estadoEvento = evento.get("estado_evento");
             if (!["activo", "vencido"].includes(estadoEvento)) {
                 return res.status(403).json({ success: false, message: "Este evento no está disponible actualmente" });
             }
 
-            // Obtener organizador
-            const organizador = await ParticipacionDAO.findOrganizadorByEventoId(evento.get("evento_id"));
-            let organizadorInfo = null;
+            // 3️⃣ Contar asistentes
+            let asistentesList = [];
+            if (usuario_id && !isNaN(usuario_id)) {
+                const participantes = await ParticipacionDAO.findByEventoId(eventoId); // Asegúrate de tener este método
+                const asistentesFiltrados = participantes.filter(p => p.rol_evento === "asistente");
 
+                for (const participante of asistentesFiltrados) {
+                    const usuario = await UsuarioDAO.findOne(participante.usuario_id);
+                    if (usuario) {
+                        asistentesList.push({
+                            nombre: usuario.get("nombreCompleto"),
+                            correo: usuario.get("correo"),
+                            url_imagen: usuario.get("url_imagen") || null,
+                        });
+                    }
+                }
+            }
+
+
+            // 4️⃣ Determinar rol del usuario (si se pasó)
+            let rol: "organizador" | "asistente" | "nada" = "nada";
+            if (usuario_id && !isNaN(usuario_id)) {
+                const participaciones = await ParticipacionDAO.findByEventoAndUsuario(eventoId, usuario_id);
+                if (participaciones.length > 0) {
+                    const rolEvento = participaciones[0].rol_evento;
+                    rol = rolEvento === "organizador" ? "organizador" : "asistente";
+                }
+            }
+
+            // 5️⃣ Organizador
+            let organizadorInfo = null;
+            const organizador = await ParticipacionDAO.findOrganizadorByEventoId(eventoId);
             if (organizador) {
                 const usuario = await UsuarioDAO.findOne(organizador.usuario_id);
                 if (usuario) {
@@ -66,7 +95,7 @@ class EventoController {
                 }
             }
 
-            // Obtener categoría
+            // 6️⃣ Categoría
             const categoriaId = evento.get("categoria_id");
             let categoriaInfo = null;
 
@@ -80,15 +109,13 @@ class EventoController {
                 }
             }
 
-            // Contar asistentes
-            const asistentes = await ParticipacionDAO.countAsistentesByEventoId(evento.get("evento_id"));
-
-            // Preparar respuesta
+            // 7️⃣ Preparar respuesta
             const eventoData = {
-                ...evento.toJSON(),
+                ...(evento.toJSON?.() ?? evento),
+                rol,
                 organizador: organizadorInfo,
                 categoria: categoriaInfo,
-                asistentes,
+                asistentes_list: asistentesList,
             };
 
             return res.status(200).json({

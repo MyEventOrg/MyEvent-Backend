@@ -71,6 +71,10 @@ class ParticipacionDAO {
       },
     });
   }
+
+  static async findByEventoId(eventoId: number) {
+    return Participacion.findAll({ where: { evento_id: eventoId } });
+  }
 }
 
 export default ParticipacionDAO;
