@@ -11,7 +11,7 @@ export interface UsuarioAttributes {
   contrasena: string;
   fecha_registro: Date;
   activo: boolean;
-  rol: string;         // ej: 'admin' | 'user'
+  rol: string;
   apodo?: string | null;
   url_imagen?: string | null;
 }
@@ -92,7 +92,7 @@ export interface EventoAttributes {
   url_direccion?: string | null;
   url_recurso?: string | null;
   estado_evento: "pendiente" | "rechazado" | "activo" | "vencido";
-  categoria_id?: number | null; // FK
+  categoria_id?: number | null;
 }
 
 export type EventoCreationAttributes = Optional<

@@ -48,6 +48,29 @@ class ParticipacionDAO {
       attributes: ["participacion_id", "evento_id", "rol_evento"],
     });
   }
+
+  static async countAsistentesByEventoId(evento_id: number) {
+    try {
+      return await Participacion.count({
+        where: {
+          evento_id,
+          rol_evento: "asistente",
+        },
+      });
+    } catch (error) {
+      console.error("Error en countAsistentesByEventoId:", error);
+      return 0;
+    }
+  }
+
+  static async findByEventoAndUsuario(evento_id: number, usuario_id: number) {
+    return Participacion.findAll({
+      where: {
+        evento_id,
+        usuario_id,
+      },
+    });
+  }
 }
 
 export default ParticipacionDAO;

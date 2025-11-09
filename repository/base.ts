@@ -65,4 +65,8 @@ export default class BaseRepository<T extends Model> {
       return false;
     }
   }
+
+  async findOneByWhere(where: any): Promise<T | null> {
+    return this.model.findOne({ where });
+  }
 }

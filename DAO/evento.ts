@@ -1,6 +1,7 @@
 import BaseRepository from "../repository/base";
 import { Evento } from "../configs/models";
 import { Op } from "sequelize";
+
 const eventoRepository = new BaseRepository<Evento>(Evento);
 
 class EventoDAO {
@@ -72,6 +73,42 @@ class EventoDAO {
       // agrega/quita atributos según necesites
       // attributes: [...]
       order: [["fecha_creacion_evento", "DESC"]],
+    });
+  }
+
+  static async findByIds(eventoIds: number[]) {
+    if (!eventoIds?.length) return [];
+    return Evento.findAll({
+      where: {
+        evento_id: { [Op.in]: eventoIds },
+      },
+      order: [["fecha_creacion_evento", "DESC"]],
+    });
+  }
+
+  static async findFiltered(
+    search: string = "",
+    tipo: string = "",
+    categoria_id?: number
+  ) {
+    const where: any = {
+      estado_evento: "activo"
+    };
+    if (search) {
+      where.titulo = { [Op.like]: `%${search}%` };
+    }
+
+    if (tipo && tipo !== "Todos") {
+      where.tipo_evento = tipo;
+    }
+
+    if (categoria_id && categoria_id !== -1) {
+      where.categoria_id = categoria_id;
+    }
+
+    return Evento.findAll({
+      where,
+      order: [["fecha_evento", "DESC"]],
     });
   }
 

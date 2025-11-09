@@ -44,7 +44,7 @@ class ResumenController {
         res: Response
     ): Promise<Response> {
         try {
-            // 1) Validar usuario_id desde varias posibles fuentes
+
             const usuarioRaw =
                 (req.params.usuarioId ??
                     req.params.id ??
@@ -60,7 +60,7 @@ class ResumenController {
                 });
             }
 
-            // 2) Traer participaciones y guardados en paralelo
+
             const [pCreados, pAsistiendo, guardados] = await Promise.all([
                 ParticipacionDAO.findByUsuarioIdAndRoles(usuario_id, "organizador"),
                 ParticipacionDAO.findByUsuarioIdAndRoles(usuario_id, [
@@ -70,14 +70,14 @@ class ResumenController {
                 EventosGuardadoDAO.findByUsuarioId(usuario_id),
             ]);
 
-            // 3) Obtener IDs únicos
+
             const creadosIds = uniq(pCreados.map((p: any) => Number(p.evento_id)));
             const asistiendoIds = uniq(
                 pAsistiendo.map((p: any) => Number(p.evento_id))
             );
             const guardadosIds = uniq(guardados.map((g: any) => Number(g.evento_id)));
 
-            // 4) Buscar eventos activos por cada grupo
+
             const [eventosCreadosRaw, eventosAsistiendoRaw, eventosGuardadosRaw] =
                 await Promise.all([
                     EventoDAO.findByIdsActivos(creadosIds),
@@ -85,12 +85,35 @@ class ResumenController {
                     EventoDAO.findByIdsActivos(guardadosIds),
                 ]);
 
-            // 5) Adaptar a formato uniforme
-            const eventosCreados = (eventosCreadosRaw || []).map(adaptEvento);
-            const eventosAsistiendo = (eventosAsistiendoRaw || []).map(adaptEvento);
-            const eventosGuardados = (eventosGuardadosRaw || []).map(adaptEvento);
 
-            // 6) Construir respuesta
+            const eventosCreados = await Promise.all(
+                (eventosCreadosRaw || []).map(async (evento) => {
+                    const asistentes = await ParticipacionDAO.countAsistentesByEventoId(
+                        evento.evento_id
+                    );
+                    return { ...adaptEvento(evento), asistentes };
+                })
+            );
+
+            const eventosAsistiendo = await Promise.all(
+                (eventosAsistiendoRaw || []).map(async (evento) => {
+                    const asistentes = await ParticipacionDAO.countAsistentesByEventoId(
+                        evento.evento_id
+                    );
+                    return { ...adaptEvento(evento), asistentes };
+                })
+            );
+
+            const eventosGuardados = await Promise.all(
+                (eventosGuardadosRaw || []).map(async (evento) => {
+                    const asistentes = await ParticipacionDAO.countAsistentesByEventoId(
+                        evento.evento_id
+                    );
+                    return { ...adaptEvento(evento), asistentes };
+                })
+            );
+
+
             const resumen: ResumenData = {
                 usuario_id,
                 totals: {

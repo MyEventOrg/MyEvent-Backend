@@ -3,6 +3,7 @@ import EventoDAO from "../DAO/evento";
 import ParticipacionDAO from "../DAO/participacion";
 import UsuarioDAO from "../DAO/usuario";
 import CategoriaDAO from "../DAO/categoria";
+import EventosGuardadosDAO from "../DAO/eventosGuardado";
 import EventoService from "../services/eventoService";
 
 import { FileUploadService } from "../helpers/fileUpload";
@@ -251,6 +252,77 @@ class EventoController {
             }
         }
     ];
+
+    static async getEventosFiltrados(req: Request, res: Response) {
+        try {
+            // 1️⃣ Validar usuario_id desde la URL
+            const usuario_id = Number(req.params.usuarioId);
+            if (!usuario_id || isNaN(usuario_id)) {
+                return res.status(400).json({ error: "usuario_id inválido en la URL" });
+            }
+
+            // 2️⃣ Obtener filtros desde query
+            const search = (req.query.search as string) || "";
+            const tipo = (req.query.tipo as string) || "";
+            const categoriaNombre = (req.query.categoria as string) || "Todos";
+
+            let categoria_id: number | undefined;
+            if (categoriaNombre !== "Todos") {
+                const id = await CategoriaDAO.findIdByNombre(categoriaNombre);
+                if (id) categoria_id = id;
+            }
+
+            // 3️⃣ Obtener los eventos filtrados
+            const eventosRaw = await EventoDAO.findFiltered(search, tipo, categoria_id);
+
+            // 4️⃣ Obtener eventos guardados del usuario
+            const eventosGuardados = await EventosGuardadosDAO.findByUsuarioId(usuario_id);
+            const idsGuardados = new Set(
+                (eventosGuardados || []).map((eg: any) => Number(eg.evento_id))
+            );
+
+            // 5️⃣ Adaptar los eventos
+            const eventosAdaptados = await Promise.all(
+                (eventosRaw || []).map(async (evento: any) => {
+                    const asistentes = await ParticipacionDAO.countAsistentesByEventoId(evento.evento_id);
+
+                    // Determinar rol
+                    let rol: "organizador" | "asistente" | "nada" = "nada";
+                    const participaciones = await ParticipacionDAO.findByEventoAndUsuario(
+                        evento.evento_id,
+                        usuario_id
+                    );
+
+                    if (participaciones && participaciones.length > 0) {
+                        const rolEvento = participaciones[0].rol_evento;
+                        rol = rolEvento === "organizador" ? "organizador" : "asistente";
+                    }
+
+                    // Determinar si está guardado
+                    const guardado = idsGuardados.has(evento.evento_id) ? "si" : "no";
+
+                    return {
+                        ...(evento.toJSON?.() ?? evento),
+                        asistentes,
+                        rol,
+                        guardado,
+                    };
+                })
+            );
+
+            // 6️⃣ Respuesta final
+            return res.status(200).json({
+                data: eventosAdaptados,
+                total: eventosAdaptados.length,
+            });
+        } catch (error) {
+            console.error("Error en getEventosFiltrados:", error);
+            return res.status(500).json({ error: "Error al filtrar eventos" });
+        }
+    }
+
+
+
 }
 
 export default EventoController;

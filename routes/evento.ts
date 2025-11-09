@@ -11,4 +11,6 @@ router.put("/eventos/:id/estado", EventoController.updateEstado);
 
 router.post("/eventos", EventoController.createEvento);
 
+router.get("/buscarEventos/:usuarioId", EventoController.getEventosFiltrados);
+
 export default router;
