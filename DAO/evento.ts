@@ -76,6 +76,17 @@ class EventoDAO {
     });
   }
 
+  static async findByIdsActivosAndVencidos(eventoIds: number[]) {
+    if (!eventoIds?.length) return [];
+
+    return Evento.findAll({
+      where: {
+        evento_id: { [Op.in]: eventoIds },
+        estado_evento: { [Op.in]: ["activo", "vencido"] }, 
+      },
+      order: [["fecha_creacion_evento", "DESC"]],
+    });
+  }
   static async findByIds(eventoIds: number[]) {
     if (!eventoIds?.length) return [];
     return Evento.findAll({

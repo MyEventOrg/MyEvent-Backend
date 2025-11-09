@@ -30,6 +30,12 @@ class EventosGuardadoDAO {
       attributes: ["evento_id"],
     });
   }
+
+  static async removeByUsuarioYEvento(usuario_id: number, evento_id: number) {
+    return EventosGuardado.destroy({
+      where: { usuario_id, evento_id },
+    });
+  }
 }
 
 export default EventosGuardadoDAO;
