@@ -346,8 +346,6 @@ ComentarioEvento.init(
   { sequelize, tableName: "ComentarioEvento", timestamps: false }
 );
 
-
-
 /* =========================================================
  * NOTIFICACION
  * =======================================================*/
@@ -456,7 +454,6 @@ ComentarioEvento.belongsTo(Usuario, { foreignKey: "usuario_id" });
 
 Evento.hasMany(ComentarioEvento, { foreignKey: "evento_id" });
 ComentarioEvento.belongsTo(Evento, { foreignKey: "evento_id" });
-
 
 // Usuario 1 - N Notificacion
 Usuario.hasMany(Notificacion, { foreignKey: "usuario_id" });
