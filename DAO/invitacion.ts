@@ -23,6 +23,14 @@ class InvitacionDAO {
   static async remove(id: number) {
     return invitacionRepository.remove(id);
   }
+
+  static async findByEventoAndUsuario(evento_id: number, invitado_id: number) {
+    return Invitacion.findOne({
+      where: { evento_id, invitado_id },
+      order: [["fecha_invitacion", "DESC"]]  // <--- clave
+    });
+  }
+
 }
 
 export default InvitacionDAO;

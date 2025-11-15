@@ -52,7 +52,7 @@ CREATE TABLE Invitacion (
     invitacion_id    INT AUTO_INCREMENT PRIMARY KEY,
     estado           ENUM('pendiente','aceptada','rechazada') DEFAULT 'pendiente',
     mensaje          VARCHAR(200),
-    fecha_invitacion DATE NOT NULL,
+    fecha_invitacion DATETIME NOT NULL,
     organizador_id   INT NOT NULL,
     invitado_id      INT NOT NULL,
     evento_id        INT NOT NULL,
@@ -242,7 +242,7 @@ VALUES ('2025-09-22', 'coorganizador', 3, 2);
 
 -- Juan invita a María al Taller
 INSERT INTO Invitacion (estado, mensaje, fecha_invitacion, organizador_id, invitado_id, evento_id)
-VALUES ('pendiente', 'Hola María, te invito a mi taller.', '2025-09-25', 1, 2, 3);
+VALUES ('pendiente', 'Hola María, te invito a mi taller.', '2025-11-15 09:42:31', 1, 2, 3);
 
 
 -- María guarda el evento Concierto Rock Fest

@@ -212,12 +212,16 @@ export interface InvitacionAttributes {
   invitacion_id: number;
   estado: InvitacionEstado;
   mensaje?: string | null;
-  fecha_invitacion: Date;
-  organizador_id: number; // FK Usuario
-  invitado_id: number;    // FK Usuario
-  evento_id: number;      // FK Evento
+  fecha_invitacion: Date;      // <-- OK para DATETIME
+  organizador_id: number;
+  invitado_id: number;
+  evento_id: number;
 }
-export type InvitacionCreationAttributes = Optional<InvitacionAttributes, "invitacion_id" | "mensaje">;
+
+export type InvitacionCreationAttributes = Optional<
+  InvitacionAttributes,
+  "invitacion_id" | "mensaje"
+>;
 
 export class Invitacion
   extends Model<InvitacionAttributes, InvitacionCreationAttributes>
@@ -225,7 +229,7 @@ export class Invitacion
   public invitacion_id!: number;
   public estado!: InvitacionEstado;
   public mensaje?: string | null;
-  public fecha_invitacion!: Date;
+  public fecha_invitacion!: Date;    // <-- OK
   public organizador_id!: number;
   public invitado_id!: number;
   public evento_id!: number;
@@ -233,16 +237,51 @@ export class Invitacion
 
 Invitacion.init(
   {
-    invitacion_id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
-    estado: { type: DataTypes.ENUM("pendiente", "aceptada", "rechazada"), allowNull: false, defaultValue: "pendiente" },
-    mensaje: { type: DataTypes.STRING(200), allowNull: true },
-    fecha_invitacion: { type: DataTypes.DATE, allowNull: false },
-    organizador_id: { type: DataTypes.INTEGER, allowNull: false },
-    invitado_id: { type: DataTypes.INTEGER, allowNull: false },
-    evento_id: { type: DataTypes.INTEGER, allowNull: false },
+    invitacion_id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true
+    },
+
+    estado: {
+      type: DataTypes.ENUM("pendiente", "aceptada", "rechazada"),
+      allowNull: false,
+      defaultValue: "pendiente"
+    },
+
+    mensaje: {
+      type: DataTypes.STRING(200),
+      allowNull: true
+    },
+
+    fecha_invitacion: {
+      type: DataTypes.DATE,             // <-- MYSQL DATETIME compatible
+      allowNull: false,
+      defaultValue: DataTypes.NOW       // <-- Nuevo (muy recomendado)
+    },
+
+    organizador_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
+
+    invitado_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
+
+    evento_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
   },
-  { sequelize, tableName: "Invitacion", timestamps: false }
+  {
+    sequelize,
+    tableName: "Invitacion",
+    timestamps: false
+  }
 );
+
 
 /* =========================================================
  * EVENTOS GUARDADO

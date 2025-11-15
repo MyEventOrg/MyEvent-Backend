@@ -5,6 +5,7 @@ import UsuarioDAO from "../DAO/usuario";
 import CategoriaDAO from "../DAO/categoria";
 import EventosGuardadosDAO from "../DAO/eventosGuardado";
 import EventoService from "../services/eventoService";
+import InvitacionDAO from "../DAO/invitacion";
 
 import { FileUploadService } from "../helpers/fileUpload";
 
@@ -34,6 +35,10 @@ class EventoController {
             const { id } = req.params;
             const eventoId = Number(id);
             const usuario_id = Number(req.query.usuario_id); // 👈 usuario_id por query
+            const validarUsuario = await UsuarioDAO.findOne(usuario_id);
+            if (!validarUsuario) {
+                return res.status(404).json({ success: false, message: "Usuario no encontrado" });
+            }
 
             if (!eventoId || isNaN(eventoId)) {
                 return res.status(400).json({ success: false, message: "ID de evento requerido" });
@@ -59,6 +64,7 @@ class EventoController {
 
                 for (const participante of asistentesFiltrados) {
                     const usuario = await UsuarioDAO.findOne(participante.usuario_id);
+
                     if (usuario) {
                         asistentesList.push({
                             nombre: usuario.get("nombreCompleto"),
@@ -71,12 +77,33 @@ class EventoController {
 
 
             // 4️⃣ Determinar rol del usuario (si se pasó)
-            let rol: "organizador" | "asistente" | "nada" = "nada";
+            let rol: "organizador" | "asistente" | "asistenciapendiente" | "nada" = "nada";
+
             if (usuario_id && !isNaN(usuario_id)) {
                 const participaciones = await ParticipacionDAO.findByEventoAndUsuario(eventoId, usuario_id);
+
+                // 🔹 Si el usuario participa formalmente
                 if (participaciones.length > 0) {
                     const rolEvento = participaciones[0].rol_evento;
-                    rol = rolEvento === "organizador" ? "organizador" : "asistente";
+
+                    if (rolEvento === "organizador") rol = "organizador";
+                    else if (rolEvento === "asistente") rol = "asistente";
+
+                } else {
+                    // 🔹 Si NO participa → Revisar invitación
+                    const invitacion = await InvitacionDAO.findByEventoAndUsuario(eventoId, usuario_id);
+
+                    if (invitacion) {
+                        const estado = invitacion.get("estado");
+
+                        if (estado === "pendiente") {
+                            rol = "asistenciapendiente";
+                        } else if (estado === "aceptada") {
+                            rol = "asistente"; // Invitación aprobada, pero aún no participa como asistente real
+                        } else if (estado === "rechazada") {
+                            rol = "nada";
+                        }
+                    }
                 }
             }
 
@@ -391,8 +418,10 @@ class EventoController {
                 (eventosRaw || []).map(async (evento: any) => {
                     const asistentes = await ParticipacionDAO.countAsistentesByEventoId(evento.evento_id);
 
-                    // Determinar rol
-                    let rol: "organizador" | "asistente" | "nada" = "nada";
+                    // ⭐⭐ NUEVA LÓGICA COMPLETA DE ROL (igual a getEvento ⭐⭐)
+                    let rol: "organizador" | "asistente" | "asistenciapendiente" | "nada" = "nada";
+
+                    // primero buscar participación
                     const participaciones = await ParticipacionDAO.findByEventoAndUsuario(
                         evento.evento_id,
                         usuario_id
@@ -400,7 +429,28 @@ class EventoController {
 
                     if (participaciones && participaciones.length > 0) {
                         const rolEvento = participaciones[0].rol_evento;
-                        rol = rolEvento === "organizador" ? "organizador" : "asistente";
+
+                        if (rolEvento === "organizador") rol = "organizador";
+                        else if (rolEvento === "asistente") rol = "asistente";
+                    }
+                    else {
+                        // si NO participa, buscar invitaciones
+                        const invitacion = await InvitacionDAO.findByEventoAndUsuario(
+                            evento.evento_id,
+                            usuario_id
+                        );
+
+                        if (invitacion) {
+                            const estado = invitacion.get("estado");
+
+                            if (estado === "pendiente") {
+                                rol = "asistenciapendiente";
+                            } else if (estado === "aceptada") {
+                                rol = "asistente";
+                            } else if (estado === "rechazada") {
+                                rol = "nada";
+                            }
+                        }
                     }
 
                     // Determinar si está guardado
