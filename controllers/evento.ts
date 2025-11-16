@@ -6,6 +6,7 @@ import CategoriaDAO from "../DAO/categoria";
 import EventosGuardadosDAO from "../DAO/eventosGuardado";
 import EventoService from "../services/eventoService";
 import InvitacionDAO from "../DAO/invitacion";
+import ComentarioEventoDAO from "../DAO/comentarioEvento";
 
 import { FileUploadService } from "../helpers/fileUpload";
 
@@ -692,6 +693,102 @@ class EventoController {
         }
     }
 
+    static async deleteEvento(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const eventoId = Number(id);
+            const usuario_id = Number(req.query.usuario_id);
+
+            if (!eventoId || isNaN(eventoId)) {
+                return res.status(400).json({
+                    success: false,
+                    message: "ID de evento inválido",
+                });
+            }
+
+            if (!usuario_id || isNaN(usuario_id)) {
+                return res.status(400).json({
+                    success: false,
+                    message: "usuario_id requerido",
+                });
+            }
+
+            // 1️⃣ Validar usuario
+            const usuario = await UsuarioDAO.findOne(usuario_id);
+            if (!usuario) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Usuario no encontrado",
+                });
+            }
+
+            // 2️⃣ Validar evento
+            const evento = await EventoDAO.findOne(eventoId);
+            if (!evento) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Evento no encontrado",
+                });
+            }
+
+            // 3️⃣ Verificar que el usuario sea organizador
+            const participacion = await ParticipacionDAO.findByEventoAndUsuario(eventoId, usuario_id);
+
+            if (!participacion || participacion.length === 0 || participacion[0].rol_evento !== "organizador") {
+                return res.status(403).json({
+                    success: false,
+                    message: "No autorizado. Solo el organizador puede eliminar el evento.",
+                });
+            }
+
+            // 4️⃣ Eliminar COMENTARIOS del evento
+            const comentarios = await ComentarioEventoDAO.findAll() || [];
+            for (const c of comentarios) {
+                if (c.evento_id === eventoId) {
+                    await ComentarioEventoDAO.remove(c.comentarioevento_id);
+                }
+            }
+
+            // 5️⃣ Eliminar EVENTOS GUARDADOS
+            const guardados = await EventosGuardadosDAO.findAll() || [];
+            for (const g of guardados) {
+                if (g.evento_id === eventoId) {
+                    await EventosGuardadosDAO.remove(g.eventosguardado_id);
+                }
+            }
+
+            // 6️⃣ Eliminar INVITACIONES del evento
+            const invitaciones = await InvitacionDAO.findAll() || [];
+            for (const i of invitaciones) {
+                if (i.evento_id === eventoId) {
+                    await InvitacionDAO.remove(i.invitacion_id);
+                }
+            }
+
+            // 7️⃣ Eliminar PARTICIPACIONES del evento
+            const participaciones = await ParticipacionDAO.findAll() || [];
+            for (const p of participaciones) {
+                if (p.evento_id === eventoId) {
+                    await ParticipacionDAO.remove(p.participacion_id);
+                }
+            }
+
+            // 8️⃣ Finalmente, eliminar el evento
+            await EventoDAO.remove(eventoId);
+
+            return res.status(200).json({
+                success: true,
+                message: "Evento eliminado correctamente",
+            });
+
+        } catch (error) {
+            console.error("Error al eliminar evento:", error);
+            return res.status(500).json({
+                success: false,
+                message: "Error interno al eliminar el evento",
+            });
+        }
+    }
 
 
 }

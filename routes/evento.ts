@@ -19,4 +19,7 @@ router.get("/eventoEditar/:id", EventoController.cargarEventoEditar)
 
 router.put("/updateEvento/:id", EventoController.updateEvento)
 
+
+router.delete("/deleteEvento/:id", EventoController.deleteEvento)
+
 export default router;
