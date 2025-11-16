@@ -15,5 +15,8 @@ router.get("/buscarEventos/:usuarioId", EventoController.getEventosFiltrados);
 
 router.get("/evento/:id", EventoController.getEvento);
 
+router.get("/eventoEditar/:id", EventoController.cargarEventoEditar)
+
+router.put("/updateEvento/:id", EventoController.updateEvento)
 
 export default router;

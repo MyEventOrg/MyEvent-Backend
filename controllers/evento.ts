@@ -158,7 +158,123 @@ class EventoController {
             });
         }
     }
+    static async cargarEventoEditar(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const eventoId = Number(id);
 
+            const usuario_id = Number(req.query.usuario_id);
+
+            if (!usuario_id || isNaN(usuario_id)) {
+                return res.status(400).json({
+                    success: false,
+                    message: "usuario_id requerido",
+                });
+            }
+
+            // 1️⃣ Validar que el usuario exista
+            const validarUsuario = await UsuarioDAO.findOne(usuario_id);
+            if (!validarUsuario) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Usuario no encontrado",
+                });
+            }
+
+            // 2️⃣ Validar evento
+            if (!eventoId || isNaN(eventoId)) {
+                return res.status(400).json({
+                    success: false,
+                    message: "ID de evento requerido",
+                });
+            }
+
+            const evento = await EventoDAO.findOne(eventoId);
+            if (!evento) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Evento no encontrado",
+                });
+            }
+
+            // 3️⃣ VALIDAR QUE EL USUARIO SEA ORGANIZADOR
+            const participacion = await ParticipacionDAO.findByEventoAndUsuario(eventoId, usuario_id);
+
+            if (!participacion || participacion.length === 0) {
+                return res.status(403).json({
+                    success: false,
+                    message: "Usuario no autorizado!",
+                });
+            }
+
+            const rolEvento = participacion[0].rol_evento;
+
+            if (rolEvento !== "organizador") {
+                return res.status(403).json({
+                    success: false,
+                    message: "Usuario no autorizado!",
+                });
+            }
+
+            // 4️⃣ Validar estado de evento
+            const estadoEvento = evento.get("estado_evento");
+            if (!["activo", "vencido"].includes(estadoEvento)) {
+                return res.status(403).json({
+                    success: false,
+                    message: "Este evento no está disponible actualmente",
+                });
+            }
+
+            // 5️⃣ Obtener info del organizador (dejarlo por si lo usas en frontend)
+            let organizadorInfo = null;
+            const organizador = await ParticipacionDAO.findOrganizadorByEventoId(eventoId);
+
+            if (organizador) {
+                const userOrg = await UsuarioDAO.findOne(organizador.usuario_id);
+                if (userOrg) {
+                    organizadorInfo = {
+                        usuario_id: userOrg.get("usuario_id"),
+                        nombreCompleto: userOrg.get("nombreCompleto"),
+                        correo: userOrg.get("correo"),
+                        apodo: userOrg.get("apodo"),
+                    };
+                }
+            }
+
+            // 6️⃣ Categoria del evento
+            const categoriaId = evento.get("categoria_id");
+            let categoriaInfo = null;
+
+            if (typeof categoriaId === "number") {
+                const categoria = await CategoriaDAO.findOne(categoriaId);
+                if (categoria) {
+                    categoriaInfo = {
+                        categoria_id: categoria.get("categoria_id"),
+                        nombre: categoria.get("nombre"),
+                    };
+                }
+            }
+
+            // 7️⃣ Preparar respuesta final (SOLO evento + categoria + organizador)
+            const eventoData = {
+                ...(evento.toJSON?.() ?? evento),
+                organizador: organizadorInfo,
+                categoria: categoriaInfo,
+            };
+
+            return res.status(200).json({
+                success: true,
+                data: eventoData,
+            });
+
+        } catch (error) {
+            console.error("Error en cargarEventoEditar:", error);
+            return res.status(500).json({
+                success: false,
+                message: "Error al obtener el evento",
+            });
+        }
+    }
 
     static async getEventosPublicos(req: Request, res: Response) {
         try {
@@ -303,6 +419,106 @@ class EventoController {
             return res.status(500).json({ success: false, message: "Error interno del servidor" });
         }
     }
+
+    static async updateEvento(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const eventoId = Number(id);
+
+
+            // 2️⃣ Validar evento
+            if (!eventoId || isNaN(eventoId)) {
+                return res.status(400).json({
+                    success: false,
+                    message: "ID de evento requerido",
+                });
+            }
+
+            const evento = await EventoDAO.findOne(eventoId);
+            if (!evento) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Evento no encontrado",
+                });
+            }
+            // 4️⃣ Validar estado
+            const estadoEvento = evento.get("estado_evento");
+            if (!["activo", "vencido"].includes(estadoEvento)) {
+                return res.status(403).json({
+                    success: false,
+                    message: "Este evento no puede editarse actualmente",
+                });
+            }
+
+            // 5️⃣ Procesar subida de PDF (opcional)
+            let pdfUrl = req.body.url_recurso;
+            let pdfFile = req.file;
+
+            if (!pdfFile && (req as any).files) {
+                const files = (req as any).files;
+                pdfFile = files.pdf?.[0] || files.recurso?.[0] || files.file?.[0];
+            }
+
+            if (pdfFile) {
+                const validation = FileUploadService.validatePdfFile(pdfFile);
+                if (!validation.valid) {
+                    return res.status(400).json({
+                        success: false,
+                        message: validation.error,
+                    });
+                }
+
+                const uploadResult = await FileUploadService.uploadFile(pdfFile);
+                if (!uploadResult.success) {
+                    return res.status(500).json({
+                        success: false,
+                        message: uploadResult.message,
+                    });
+                }
+
+                pdfUrl = uploadResult.url;
+            }
+
+            // 6️⃣ Construir objeto de UPDATE sin validaciones duplicadas
+            const updateData = {
+                titulo: req.body.titulo,
+                descripcion_corta: req.body.descripcion_corta,
+                descripcion_larga: req.body.descripcion_larga,
+                tipo_evento: req.body.tipo_evento,
+                ubicacion: req.body.ubicacion,
+                latitud: req.body.latitud,
+                longitud: req.body.longitud,
+                ciudad: req.body.ciudad,
+                distrito: req.body.distrito,
+                categoria_id: req.body.categoria_id || null,
+                url_imagen: req.body.url_imagen,
+                url_recurso: pdfUrl,
+            };
+
+            // 7️⃣ Guardar en BD
+            const updated = await EventoDAO.update(eventoId, updateData);
+
+            if (!updated) {
+                return res.status(500).json({
+                    success: false,
+                    message: "No se pudo actualizar el evento",
+                });
+            }
+
+            return res.status(200).json({
+                success: true,
+                message: "Evento actualizado correctamente",
+            });
+
+        } catch (error) {
+            console.error("Error en updateEvento:", error);
+            return res.status(500).json({
+                success: false,
+                message: "Error interno del servidor",
+            });
+        }
+    }
+
 
     /**
      * Crear evento (con imagen y/o PDF)
