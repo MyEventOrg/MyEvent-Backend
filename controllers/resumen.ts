@@ -30,6 +30,8 @@ function adaptEvento(evento: any) {
         ciudad: evento.ciudad,
         distrito: evento.distrito,
         url_imagen: evento.url_imagen,
+        latitud: evento.latitud,
+        longitud: evento.longitud,
         url_direccion: evento.url_direccion,
     };
 }

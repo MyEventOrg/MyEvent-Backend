@@ -16,6 +16,8 @@ function adaptEvento(evento: any) {
         url_imagen: evento.url_imagen,
         url_direccion: evento.url_direccion,
         estado_evento: evento.estado_evento,
+        latitud: evento.latitud,
+        longitud: evento.longitud,
     };
 }
 
