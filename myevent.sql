@@ -81,6 +81,18 @@ CREATE TABLE ComentarioEvento (
     FOREIGN KEY (evento_id)  REFERENCES Evento(evento_id)
 );
 
+CREATE TABLE Notificacion (
+    notificacion_id INT AUTO_INCREMENT PRIMARY KEY,
+    fecha_creacion DATETIME NOT NULL,
+    mensaje    VARCHAR(200) NOT NULL,
+    visto      BOOL NOT NULL DEFAULT FALSE,
+    usuario_id INT NOT NULL,
+    evento_id  INT NOT NULL,
+    FOREIGN KEY (usuario_id) REFERENCES Usuario(usuario_id),
+    FOREIGN KEY (evento_id)  REFERENCES Evento(evento_id)
+);
+
+
 
 -- LA CONTRA ES: Kekito120820_
 INSERT INTO Usuario 
@@ -263,18 +275,37 @@ INSERT INTO ComentarioEvento (mensaje, likes, dislikes, usuario_id, evento_id)
 VALUES ('Se viene con todo este concierto', 5, 1, 1, 2);
 
 
--- OPCIONALLLL
+INSERT INTO Notificacion (fecha_creacion, mensaje, visto, usuario_id, evento_id)
+VALUES
+('2025-11-15 20:10:00',
+ 'Tu evento Tech Conference 2025 tiene un nuevo asistente.',
+ FALSE,
+ 1, 1),
 
--- ========================
--- OPCIONAL: Refresh Tokens
--- (solo si implementas sesiones largas)
--- ========================
-CREATE TABLE RefreshToken (
-    token_id INT AUTO_INCREMENT PRIMARY KEY,
-    usuario_id INT NOT NULL,
-    token VARCHAR(500) NOT NULL,
-    fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
-    fecha_expiracion DATETIME NOT NULL,
-    valido BOOL DEFAULT TRUE,
-    FOREIGN KEY (usuario_id) REFERENCES Usuario(usuario_id)
-);
+('2025-11-14 09:20:00',
+ 'Recordatorio: el evento Hackathon Universitaria 2025 se acerca.',
+ FALSE,
+ 1, 1),
+
+('2025-11-13 14:05:00',
+ 'Han comentado tu evento Hackathon Universitaria 2025.',
+ FALSE,
+ 1, 1);
+
+
+INSERT INTO Notificacion (fecha_creacion, mensaje, visto, usuario_id, evento_id)
+VALUES
+('2025-11-15 18:20:00',
+ 'Recordatorio: se acerca el evento Rock Fest Lima que guardaste.',
+ FALSE,
+ 2, 2),
+
+('2025-11-15 09:42:31',
+ 'Juan Pérez te ha enviado una invitación al evento Taller de Emprendimiento.',
+ FALSE,
+ 2, 3),
+
+('2025-11-10 11:10:00',
+ 'El evento Tech Conference 2025 que asistirás ha actualizado sus detalles.',
+ TRUE,
+ 2, 1);

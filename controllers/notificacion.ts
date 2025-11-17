@@ -1,145 +1,71 @@
 import { Request, Response } from "express";
-import fs from "fs";
-import path from "path";
-import { transporter, MAIL } from "../configs/mailer";
-import UsuarioDAO from "../DAO/usuario";
+import NotificacionDAO from "../DAO/notificacion";
 
-// Almacén temporal de códigos de verificación
-const verificationStore = new Map<string, { code: string; expiresAt: number }>();
-const CODE_TTL_MS = 10 * 60 * 1000; // 10 minutos
-const MINUTES = CODE_TTL_MS / 60000;
+class NotificacionController {
 
-// Cargar template de correo
-const TEMPLATE_PATH = path.join(process.cwd(), "templates", "codigoverificacion.html");
-let TEMPLATE_HTML: string;
-
-try {
-    TEMPLATE_HTML = fs.readFileSync(TEMPLATE_PATH, "utf8");
-} catch (e) {
-    throw new Error(`[EmailTemplate] No se pudo leer ${TEMPLATE_PATH}. Asegura que exista en runtime.`);
-}
-
-class NotificationController {
-
-    // ==========================
-    // 1. ENVIAR CÓDIGO
-    // ==========================
-    static async enviarCodigoVerificacion(req: Request, res: Response): Promise<Response> {
+    static async getNotificaciones(req: Request, res: Response): Promise<Response> {
         try {
-            const { email } = req.body;
+            const { usuario_id } = req.params;
 
-            // Validación manual
-            if (!email || typeof email !== "string" || email.trim() === "") {
+            if (!usuario_id) {
                 return res.status(400).json({
-                    success: false,
-                    message: "El email es requerido"
+                    ok: false,
+                    message: "Debe enviar usuario_id"
                 });
             }
 
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(email)) {
-                return res.status(400).json({
-                    success: false,
-                    message: "El formato del email no es válido"
-                });
-            }
+            const notificaciones = await NotificacionDAO.findByUserOrdered(Number(usuario_id));
 
-            // Verificar si el usuario ya existe
-            const existe = await UsuarioDAO.findByEmail(email);
-            if (existe) {
-                return res.status(400).json({
-                    success: false,
-                    message: "El correo electrónico ya está registrado"
-                });
-            }
-
-            // Generar código (6 dígitos)
-            const code = Math.floor(100000 + Math.random() * 900000).toString();
-
-            // Guardar en memoria con expiración
-            verificationStore.set(email.toLowerCase(), {
-                code,
-                expiresAt: Date.now() + CODE_TTL_MS,
+            return res.json({
+                ok: true,
+                notificaciones
             });
 
-            // Reemplazar variables en el template HTML
-            const html = TEMPLATE_HTML
-                .replace(/{{CODE}}/g, code)
-                .replace(/{{EMAIL}}/g, email)
-                .replace(/{{MINUTES}}/g, String(MINUTES))
-                .replace(/{{YEAR}}/g, String(new Date().getFullYear()));
-
-            // Enviar correo
-            await transporter.sendMail({
-                from: MAIL.FROM,
-                to: email,
-                subject: "Tu código de verificación - MyEvent",
-                html,
-            });
-
-            return res.status(200).json({
-                success: true,
-                message: "Código de verificación enviado exitosamente"
-            });
-
-        } catch (error: any) {
-            console.error("Error al enviar el código de verificación:", error);
+        } catch (error) {
+            console.error(error);
             return res.status(500).json({
-                success: false,
-                message: "Error al enviar el código de verificación"
+                ok: false,
+                message: "Error al obtener notificaciones"
             });
         }
     }
-
-    // ==========================
-    // 2. VERIFICAR CÓDIGO
-    // ==========================
-    static async verificarEmail(req: Request, res: Response): Promise<Response> {
+    static async notificacionVista(req: Request, res: Response): Promise<Response> {
         try {
-            const { email, code } = req.body;
+            const { notificacion_id } = req.body;
 
-            // Validaciones manuales
-            if (!email || typeof email !== "string" || email.trim() === "") {
+            if (!notificacion_id) {
                 return res.status(400).json({
-                    success: false,
-                    message: "El email es requerido"
+                    ok: false,
+                    message: "Debe enviar notificacion_id"
                 });
             }
 
-            if (!code || typeof code !== "string" || code.trim() === "") {
-                return res.status(400).json({
-                    success: false,
-                    message: "El código es requerido"
+            // 🟢 Actualiza usando tu BaseRepository sin problema
+            const updated = await NotificacionDAO.update(
+                Number(notificacion_id),
+                { visto: true }
+            );
+
+            if (!updated) {
+                return res.status(404).json({
+                    ok: false,
+                    message: "No se encontró la notificación"
                 });
             }
 
-            const rec = verificationStore.get(email.toLowerCase());
-            const now = Date.now();
-
-            // Validar existencia, expiración o código incorrecto
-            if (!rec || now > rec.expiresAt || rec.code !== code) {
-                return res.status(400).json({
-                    success: false,
-                    message: "Código inválido o expirado"
-                });
-            }
-
-            // Eliminar el código usado
-            verificationStore.delete(email.toLowerCase());
-
-            return res.status(200).json({
-                success: true,
-                message: "Email verificado exitosamente"
+            return res.json({
+                ok: true,
+                message: "Notificación marcada como vista",
+                notificacion: updated
             });
 
-        } catch (error: any) {
-            console.error("Error al verificar el código:", error);
+        } catch (error) {
+            console.error(error);
             return res.status(500).json({
-                success: false,
-                message: "Error al verificar el código de email"
+                ok: false,
+                message: "Error al marcar notificación como vista"
             });
         }
     }
 }
-
-export default NotificationController;
+export default NotificacionController;

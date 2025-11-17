@@ -1,9 +1,9 @@
 import { Router } from "express";
-import NotificationController from "../controllers/notificacion";
+import VerificacionController from "../controllers/verificacion";
 
 const router = Router();
 
-router.post("/enviar-codigo", NotificationController.enviarCodigoVerificacion);
-router.post("/verificar-codigo", NotificationController.verificarEmail);
+router.post("/enviar-codigo", VerificacionController.enviarCodigoVerificacion);
+router.post("/verificar-codigo", VerificacionController.verificarEmail);
 
 export default router;

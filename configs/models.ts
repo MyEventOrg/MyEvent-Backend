@@ -346,6 +346,80 @@ ComentarioEvento.init(
   { sequelize, tableName: "ComentarioEvento", timestamps: false }
 );
 
+
+
+/* =========================================================
+ * NOTIFICACION
+ * =======================================================*/
+
+export interface NotificacionAttributes {
+  notificacion_id: number;
+  fecha_creacion: Date;
+  mensaje: string;
+  visto: boolean;
+  usuario_id: number; // FK
+  evento_id: number;  // FK
+}
+
+export type NotificacionCreationAttributes = Optional<
+  NotificacionAttributes,
+  "notificacion_id" | "visto"
+>;
+
+export class Notificacion
+  extends Model<NotificacionAttributes, NotificacionCreationAttributes>
+  implements NotificacionAttributes {
+
+  public notificacion_id!: number;
+  public fecha_creacion!: Date;
+  public mensaje!: string;
+  public visto!: boolean;
+  public usuario_id!: number;
+  public evento_id!: number;
+}
+
+Notificacion.init(
+  {
+    notificacion_id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true
+    },
+
+    fecha_creacion: {
+      type: DataTypes.DATE,
+      allowNull: false,
+      defaultValue: DataTypes.NOW
+    },
+
+    mensaje: {
+      type: DataTypes.STRING(200),
+      allowNull: false
+    },
+
+    visto: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false
+    },
+
+    usuario_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
+
+    evento_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
+
+  },
+  {
+    sequelize,
+    tableName: "Notificacion",
+    timestamps: false
+  }
+);
 /* =========================================================
  * RELACIONES
  * =======================================================*/
@@ -383,6 +457,14 @@ ComentarioEvento.belongsTo(Usuario, { foreignKey: "usuario_id" });
 Evento.hasMany(ComentarioEvento, { foreignKey: "evento_id" });
 ComentarioEvento.belongsTo(Evento, { foreignKey: "evento_id" });
 
+
+// Usuario 1 - N Notificacion
+Usuario.hasMany(Notificacion, { foreignKey: "usuario_id" });
+Notificacion.belongsTo(Usuario, { foreignKey: "usuario_id" });
+
+// Evento 1 - N Notificacion
+Evento.hasMany(Notificacion, { foreignKey: "evento_id" });
+Notificacion.belongsTo(Evento, { foreignKey: "evento_id" });
 /* =========================================================
  * EXPORT
  * =======================================================*/
@@ -395,4 +477,5 @@ export const db = {
   Invitacion,
   EventosGuardado,
   ComentarioEvento,
+  Notificacion,
 };
