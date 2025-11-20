@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import ParticipacionDAO from "../DAO/participacion";
 import InvitacionDAO from "../DAO/invitacion";
 import EventoDAO from "../DAO/evento";
+import NotificacionController from "./notificacion";
 
 class InvitacionController {
 
@@ -46,6 +47,7 @@ class InvitacionController {
                     rol_evento: "asistente",
                     fecha_registro: new Date()
                 });
+                await NotificacionController.notificarAsistenciaEvento(evento_id, usuario_id);
 
                 return res.status(200).json({
                     success: true,
@@ -132,7 +134,8 @@ class InvitacionController {
 
             // 3. Eliminar participación
             await ParticipacionDAO.remove(participacion.participacion_id);
-
+            
+            await NotificacionController.notificarAnuloAsistenciaEvento(evento_id, usuario_id);
             return res.status(200).json({
                 success: true,
                 message: "La asistencia ha sido anulada exitosamente."

@@ -226,5 +226,197 @@ class NotificacionController {
             console.error("Error en notificarEliminacionEvento:", error);
         }
     }
+
+    static async notificarAsistenciaEvento(evento_id: number, usuario_id: number) {
+        try {
+            const evento = await EventoDAO.findOne(evento_id);
+            if (!evento) return;
+
+            const titulo = evento.get("titulo");
+
+            // 🟦 Obtener asistente
+            const asistente = await UsuarioDAO.findOne(usuario_id);
+            if (!asistente) return;
+            const correoAsistente = asistente.get("correo");
+
+            // 🟧 Obtener organizador
+            const organizador = await ParticipacionDAO.findOrganizadorByEventoId(evento_id);
+            if (!organizador) return;
+
+            const organizadorUser = await UsuarioDAO.findOne(organizador.usuario_id);
+            if (!organizadorUser) return;
+            const correoOrganizador = organizadorUser.get("correo");
+
+            // 🕒 Fecha formato MySQL
+            const ahora = new Date();
+            const fecha_creacion =
+                `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}-${String(ahora.getDate()).padStart(2, '0')} ` +
+                `${String(ahora.getHours()).padStart(2, '0')}:${String(ahora.getMinutes()).padStart(2, '0')}:${String(ahora.getSeconds()).padStart(2, '0')}`;
+
+            // ============================================================
+            // 🟩 1. NOTIFICACIÓN INTERNA PARA EL ASISTENTE
+            // ============================================================
+            await NotificacionDAO.create({
+                usuario_id,
+                evento_id,
+                mensaje: `Te has unido al evento "${titulo}" exitosamente.`,
+                visto: false,
+                fecha_creacion
+            });
+
+            // ============================================================
+            // 🟪 2. NOTIFICACIÓN INTERNA PARA EL ORGANIZADOR
+            // ============================================================
+            await NotificacionDAO.create({
+                usuario_id: organizador.usuario_id,
+                evento_id,
+                mensaje: `El usuario ${correoAsistente} se ha unido a tu evento "${titulo}".`,
+                visto: false,
+                fecha_creacion
+            });
+
+            // ============================================================
+            // 3. CORREO AL ASISTENTE
+            // ============================================================
+            const templateAsistente = fs.readFileSync(
+                path.join(process.cwd(), "templates", "asistenciaConfirmada.html"),
+                "utf8"
+            );
+
+            const htmlAsistente = templateAsistente
+                .replace(/{{TITULO}}/g, titulo)
+                .replace(/{{YEAR}}/g, String(new Date().getFullYear()));
+
+            await transporter.sendMail({
+                from: MAIL.FROM,
+                to: correoAsistente,
+                subject: `Te has unido al evento "${titulo}" ✔`,
+                html: htmlAsistente
+            });
+
+            // ============================================================
+            // 4. CORREO AL ORGANIZADOR
+            // ============================================================
+            const templateOrganizador = fs.readFileSync(
+                path.join(process.cwd(), "templates", "nuevoAsistente.html"),
+                "utf8"
+            );
+
+            const htmlOrganizador = templateOrganizador
+                .replace(/{{TITULO}}/g, titulo)
+                .replace(/{{ASISTENTE}}/g, correoAsistente)
+                .replace(/{{YEAR}}/g, String(new Date().getFullYear()));
+
+            await transporter.sendMail({
+                from: MAIL.FROM,
+                to: correoOrganizador,
+                subject: `Nuevo asistente para tu evento "${titulo}"`,
+                html: htmlOrganizador
+            });
+
+            console.log("Notificaciones enviadas a asistente y organizador.");
+
+        } catch (error) {
+            console.error("Error en notificarAsistenciaEvento:", error);
+        }
+    }
+
+    static async notificarAnuloAsistenciaEvento(evento_id: number, usuario_id: number) {
+        try {
+            const evento = await EventoDAO.findOne(evento_id);
+            if (!evento) return;
+
+            const titulo = evento.get("titulo");
+
+            // 🟦 Obtener asistente (quien se retiró)
+            const asistente = await UsuarioDAO.findOne(usuario_id);
+            if (!asistente) return;
+
+            const correoAsistente = asistente.get("correo");
+
+            // 🟧 Obtener organizador
+            const organizador = await ParticipacionDAO.findOrganizadorByEventoId(evento_id);
+            if (!organizador) return;
+
+            const organizadorUser = await UsuarioDAO.findOne(organizador.usuario_id);
+            if (!organizadorUser) return;
+
+            const correoOrganizador = organizadorUser.get("correo");
+
+            // 🕒 Fecha formato MySQL
+            const ahora = new Date();
+            const fecha_creacion =
+                `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}-${String(ahora.getDate()).padStart(2, '0')} ` +
+                `${String(ahora.getHours()).padStart(2, '0')}:${String(ahora.getMinutes()).padStart(2, '0')}:${String(ahora.getSeconds()).padStart(2, '0')}`;
+
+            // ============================================================
+            // 🟩 1. NOTIFICACIÓN INTERNA PARA EL ASISTENTE
+            // ============================================================
+            await NotificacionDAO.create({
+                usuario_id,
+                evento_id,
+                mensaje: `Has cancelado tu asistencia al evento "${titulo}".`,
+                visto: false,
+                fecha_creacion
+            });
+
+            // ============================================================
+            // 🟪 2. NOTIFICACIÓN INTERNA PARA EL ORGANIZADOR
+            // ============================================================
+            await NotificacionDAO.create({
+                usuario_id: organizador.usuario_id,
+                evento_id,
+                mensaje: `El usuario ${correoAsistente} ha cancelado su asistencia al evento "${titulo}".`,
+                visto: false,
+                fecha_creacion
+            });
+
+            // ============================================================
+            // 3. CORREO AL ASISTENTE
+            // ============================================================
+            const templateAsistente = fs.readFileSync(
+                path.join(process.cwd(), "templates", "asistenciaCancelada.html"),
+                "utf8"
+            );
+
+            const htmlAsistente = templateAsistente
+                .replace(/{{TITULO}}/g, titulo)
+                .replace(/{{YEAR}}/g, String(new Date().getFullYear()));
+
+            await transporter.sendMail({
+                from: MAIL.FROM,
+                to: correoAsistente,
+                subject: `Has cancelado tu asistencia al evento "${titulo}"`,
+                html: htmlAsistente
+            });
+
+            // ============================================================
+            // 4. CORREO AL ORGANIZADOR
+            // ============================================================
+            const templateOrganizador = fs.readFileSync(
+                path.join(process.cwd(), "templates", "asistenteCancelo.html"),
+                "utf8"
+            );
+
+            const htmlOrganizador = templateOrganizador
+                .replace(/{{TITULO}}/g, titulo)
+                .replace(/{{ASISTENTE}}/g, correoAsistente)
+                .replace(/{{YEAR}}/g, String(new Date().getFullYear()));
+
+            await transporter.sendMail({
+                from: MAIL.FROM,
+                to: correoOrganizador,
+                subject: `Un usuario canceló su asistencia a tu evento "${titulo}"`,
+                html: htmlOrganizador
+            });
+
+            console.log("Notificaciones de cancelación enviadas a asistente y organizador.");
+
+        } catch (error) {
+            console.error("Error en notificarAnuloAsistenciaEvento:", error);
+        }
+    }
+
+
 }
 export default NotificacionController;
