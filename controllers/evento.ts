@@ -414,9 +414,9 @@ class EventoController {
             if (!result) {
                 return res.status(404).json({ success: false, message: "Evento no encontrado" });
             }
-            if (estado === "activo") {
-                await NotificacionController.crearNotificacionEventoActivo(Number(id));
-            }
+
+            await NotificacionController.crearNotificacionCambioEstadoEvento(Number(id), estado);
+
             return res.json({ success: true, message: "Estado actualizado correctamente" });
         } catch (error: any) {
             console.error("Error al actualizar estado del evento:", error);

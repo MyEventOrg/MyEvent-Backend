@@ -1,7 +1,12 @@
 import { Request, Response } from "express";
 import NotificacionDAO from "../DAO/notificacion";
 import EventoDAO from "../DAO/evento";
+import UsuarioDAO from "../DAO/usuario";
 import ParticipacionDAO from "../DAO/participacion";
+import fs from "fs";
+import path from "path";
+import { transporter, MAIL } from "../configs/mailer";
+type EstadoEvento = "pendiente" | "activo" | "rechazado";
 
 class NotificacionController {
 
@@ -71,25 +76,31 @@ class NotificacionController {
     }
 
 
-    static async crearNotificacionEventoActivo(evento_id: number) {
+    static async crearNotificacionCambioEstadoEvento(evento_id: number, estado: EstadoEvento) {
         try {
             const evento = await EventoDAO.findOne(evento_id);
-            if (!evento) {
-                console.error("No se encontró el evento para notificación");
-                return;
-            }
+            if (!evento) return;
 
             const titulo = evento.get("titulo");
 
             const organizador = await ParticipacionDAO.findOrganizadorByEventoId(evento_id);
-            if (!organizador) {
-                console.error("No se encontró el organizador del evento");
-                return;
-            }
+            if (!organizador) return;
 
             const usuario_id = organizador.usuario_id;
+            const usuario = await UsuarioDAO.findOne(usuario_id);
+            if (!usuario) return;
 
-            const mensaje = `El evento ${titulo} ha sido aprobado por un administrador! Dirigete a "Mis Eventos" para poder visualizarlo mejor.`;
+            const correo = usuario.get("correo");
+
+            let mensaje = `Un administrador ha actualizado el estado de tu evento "${titulo}" a "${estado}".`;
+
+            if (estado === "activo") {
+                mensaje += " Tu evento ha sido publicado correctamente y ahora es visible para otros usuarios.";
+            }
+
+            if (estado === "rechazado") {
+                mensaje += " Lamentablemente, tu evento ha sido rechazado. Revisa los detalles con un administrador.";
+            }
 
             const ahora = new Date();
             const fecha_creacion =
@@ -104,10 +115,52 @@ class NotificacionController {
                 fecha_creacion
             });
 
+            const templatePath = path.join(process.cwd(), "templates", "estadoEventoActualizado.html");
+            const template = fs.readFileSync(templatePath, "utf8");
+
+            const textos = {
+                activo: {
+                    header: "Evento aprobado",
+                    estadoTexto: "Aprobado",
+                    descripcion: "Tu evento ha sido aprobado y publicado. Ya es visible para todos los usuarios."
+                },
+                rechazado: {
+                    header: "Evento rechazado",
+                    estadoTexto: "Rechazado",
+                    descripcion: "Tu evento fue revisado pero lamentablemente no cumple los requisitos necesarios."
+                },
+                pendiente: {
+                    header: "Estado actualizado",
+                    estadoTexto: "Pendiente",
+                    descripcion: "Tu evento se encuentra nuevamente en revisión."
+                }
+            } as const;
+
+            const html = template
+                .replace(/{{TITULO}}/g, titulo)
+                .replace(/{{HEADER}}/g, textos[estado].header)
+                .replace(/{{ESTADO_TEXTO}}/g, textos[estado].estadoTexto)
+                .replace(/{{DESCRIPCION}}/g, textos[estado].descripcion)
+                .replace(/{{YEAR}}/g, String(new Date().getFullYear()));
+
+            const subjectPorEstado: Record<EstadoEvento, string> = {
+                activo: `Tu evento "${titulo}" ha sido aprobado.`,
+                rechazado: `Tu evento "${titulo}" ha sido rechazado.`,
+                pendiente: `El estado de tu evento "${titulo}" ha sido actualizado`,
+            };
+
+            await transporter.sendMail({
+                from: MAIL.FROM,
+                to: correo,
+                subject: subjectPorEstado[estado],
+                html
+            });
+
         } catch (error) {
-            console.error("❌ Error en crearNotificacionEventoActivo:", error);
+            console.error("Error en crearNotificacionCambioEstadoEvento:", error);
         }
     }
+
 
 
 }
