@@ -7,6 +7,7 @@ import EventosGuardadosDAO from "../DAO/eventosGuardado";
 import EventoService from "../services/eventoService";
 import InvitacionDAO from "../DAO/invitacion";
 import ComentarioEventoDAO from "../DAO/comentarioEvento";
+import NotificacionController from "./notificacion";
 
 import { FileUploadService } from "../helpers/fileUpload";
 
@@ -413,7 +414,9 @@ class EventoController {
             if (!result) {
                 return res.status(404).json({ success: false, message: "Evento no encontrado" });
             }
-
+            if (estado === "activo") {
+                await NotificacionController.crearNotificacionEventoActivo(Number(id));
+            }
             return res.json({ success: true, message: "Estado actualizado correctamente" });
         } catch (error: any) {
             console.error("Error al actualizar estado del evento:", error);
