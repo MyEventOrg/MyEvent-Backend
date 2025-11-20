@@ -4,6 +4,7 @@ import ParticipacionDAO from "../DAO/participacion";
 import UsuarioDAO from "../DAO/usuario";
 import CategoriaDAO from "../DAO/categoria";
 import EventosGuardadosDAO from "../DAO/eventosGuardado";
+import NotificacionDAO from "../DAO/notificacion";
 import EventoService from "../services/eventoService";
 import InvitacionDAO from "../DAO/invitacion";
 import ComentarioEventoDAO from "../DAO/comentarioEvento";
@@ -743,6 +744,7 @@ class EventoController {
                     message: "No autorizado. Solo el organizador puede eliminar el evento.",
                 });
             }
+            await NotificacionController.notificarEliminacionEvento(eventoId);
 
             // 4️⃣ Eliminar COMENTARIOS del evento
             const comentarios = await ComentarioEventoDAO.findAll() || [];
@@ -775,7 +777,13 @@ class EventoController {
                     await ParticipacionDAO.remove(p.participacion_id);
                 }
             }
-
+            // 7.5️⃣ Eliminar NOTIFICACIONES del evento
+            const notificaciones = await NotificacionDAO.findAll() || [];
+            for (const n of notificaciones) {
+                if (n.evento_id === eventoId) {
+                    await NotificacionDAO.remove(n.notificacion_id);
+                }
+            }
             // 8️⃣ Finalmente, eliminar el evento
             await EventoDAO.remove(eventoId);
 

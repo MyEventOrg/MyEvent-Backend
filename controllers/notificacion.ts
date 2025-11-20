@@ -161,7 +161,70 @@ class NotificacionController {
         }
     }
 
+    static async notificarEliminacionEvento(evento_id: number) {
+        try {
+            const evento = await EventoDAO.findOne(evento_id);
+            if (!evento) return;
+
+            const titulo = evento.get("titulo");
+
+            const participaciones = await ParticipacionDAO.findByEventoId(evento_id);
+
+            const asistentes = participaciones.filter(p => p.rol_evento === "asistente");
+            const organizador = participaciones.find(p => p.rol_evento === "organizador");
+
+            const ahora = new Date();
+            const fecha_creacion =
+                `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}-${String(ahora.getDate()).padStart(2, '0')} ` +
+                `${String(ahora.getHours()).padStart(2, '0')}:${String(ahora.getMinutes()).padStart(2, '0')}:${String(ahora.getSeconds()).padStart(2, '0')}`;
 
 
+            const templateAsistente = fs.readFileSync(
+                path.join(process.cwd(), "templates", "eventoEliminado.html"), "utf8"
+            );
+
+            for (const asistente of asistentes) {
+                const user = await UsuarioDAO.findOne(asistente.usuario_id);
+                if (!user) continue;
+
+                const html = templateAsistente
+                    .replace(/{{TITULO}}/g, titulo)
+                    .replace(/{{YEAR}}/g, String(new Date().getFullYear()));
+
+                await transporter.sendMail({
+                    from: MAIL.FROM,
+                    to: user.get("correo"),
+                    subject: `Aviso: El evento "${titulo}" ha sido eliminado`,
+                    html
+                });
+            }
+
+            if (organizador) {
+                const organizadorUser = await UsuarioDAO.findOne(organizador.usuario_id);
+
+                if (organizadorUser) {
+                    const templateOrganizador = fs.readFileSync(
+                        path.join(process.cwd(), "templates", "eventoEliminadoOrganizador.html"), "utf8"
+                    );
+
+                    const htmlOrg = templateOrganizador
+                        .replace(/{{TITULO}}/g, titulo)
+                        .replace(/{{YEAR}}/g, String(new Date().getFullYear()));
+
+                    await transporter.sendMail({
+                        from: MAIL.FROM,
+                        to: organizadorUser.get("correo"),
+                        subject: `Has eliminado tu evento "${titulo}" correctamente`,
+                        html: htmlOrg
+                    });
+                }
+            }
+
+            console.log("Notificaciones enviadas a asistentes y organizador.");
+
+        } catch (error) {
+            console.error("Error en notificarEliminacionEvento:", error);
+        }
+    }
 }
 export default NotificacionController;
