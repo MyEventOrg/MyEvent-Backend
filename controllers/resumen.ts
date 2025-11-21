@@ -65,10 +65,7 @@ class ResumenController {
 
             const [pCreados, pAsistiendo, guardados] = await Promise.all([
                 ParticipacionDAO.findByUsuarioIdAndRoles(usuario_id, "organizador"),
-                ParticipacionDAO.findByUsuarioIdAndRoles(usuario_id, [
-                    "asistente",
-                    "coorganizador",
-                ]),
+                ParticipacionDAO.findByUsuarioIdAndRoles(usuario_id, "asistente"),
                 EventosGuardadoDAO.findByUsuarioId(usuario_id),
             ]);
 
@@ -93,7 +90,8 @@ class ResumenController {
                     const asistentes = await ParticipacionDAO.countAsistentesByEventoId(
                         evento.evento_id
                     );
-                    return { ...adaptEvento(evento), asistentes };
+                    // JUAN-MODIFICACION: Agregar rol para eventos creados (siempre organizador)
+                    return { ...adaptEvento(evento), asistentes, rol: "organizador" };
                 })
             );
 
@@ -102,7 +100,11 @@ class ResumenController {
                     const asistentes = await ParticipacionDAO.countAsistentesByEventoId(
                         evento.evento_id
                     );
-                    return { ...adaptEvento(evento), asistentes };
+
+                    // JUAN-MODIFICACION: Siempre es asistente
+                    const rol = "asistente";
+
+                    return { ...adaptEvento(evento), asistentes, rol };
                 })
             );
 

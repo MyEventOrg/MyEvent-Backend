@@ -801,7 +801,51 @@ class EventoController {
         }
     }
 
+    static async eliminarAsistente(req: Request, res: Response) {
+        try {
+            const { evento_id, usuario_id } = req.params;
+            const organizador_id = Number(req.query.organizador_id);
 
+            if (!evento_id || !usuario_id || !organizador_id) {
+                return res.status(400).json({ success: false, message: "Faltan parámetros requeridos" });
+            }
+
+            // Verificar que quien elimina sea el organizador
+            const participacion = await ParticipacionDAO.findByEventoAndUsuario(Number(evento_id), organizador_id);
+            if (!participacion || participacion.length === 0 || participacion[0].get("rol_evento") !== "organizador") {
+                return res.status(403).json({ success: false, message: "Solo el organizador puede eliminar asistentes" });
+            }
+
+            // Buscar la participación del asistente a eliminar
+            const participacionAsistente = await ParticipacionDAO.findByEventoAndUsuario(Number(evento_id), Number(usuario_id));
+            if (!participacionAsistente || participacionAsistente.length === 0) {
+                return res.status(404).json({ success: false, message: "El usuario no es asistente de este evento" });
+            }
+
+            const rolAsistente = participacionAsistente[0].get("rol_evento") as string;
+            if (rolAsistente === "organizador") {
+                return res.status(400).json({ success: false, message: "No puedes eliminar al organizador del evento" });
+            }
+
+            // Eliminar la participación
+            const participacion_id = participacionAsistente[0].get("participacion_id") as number;
+            await ParticipacionDAO.remove(participacion_id);
+
+            // Eliminar también las invitaciones relacionadas para que pueda ser invitado nuevamente
+            const { Invitacion } = require("../configs/models");
+            await Invitacion.destroy({
+                where: {
+                    evento_id: Number(evento_id),
+                    invitado_id: Number(usuario_id)
+                }
+            });
+
+            return res.status(200).json({ success: true, message: "Asistente eliminado correctamente" });
+        } catch (error) {
+            console.error("Error en eliminarAsistente:", error);
+            return res.status(500).json({ success: false, message: "Error al eliminar asistente" });
+        }
+    }
 }
 
 export default EventoController;

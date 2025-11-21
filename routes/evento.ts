@@ -22,4 +22,7 @@ router.put("/updateEvento/:id", EventoController.updateEvento)
 
 router.delete("/deleteEvento/:id", EventoController.deleteEvento)
 
+router.delete("/evento/:evento_id/asistente/:usuario_id", EventoController.eliminarAsistente)
+
+
 export default router;

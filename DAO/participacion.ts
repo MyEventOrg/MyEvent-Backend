@@ -75,6 +75,23 @@ class ParticipacionDAO {
   static async findByEventoId(eventoId: number) {
     return Participacion.findAll({ where: { evento_id: eventoId } });
   }
+
+  // JUAN-MODIFICACION: Obtener asistentes con datos de usuario (HU40)
+  static async findAsistentesConUsuario(evento_id: number) {
+    const { Usuario } = require("../configs/models");
+
+    return Participacion.findAll({
+      where: {
+        evento_id,
+        rol_evento: "asistente"
+      },
+      include: [{
+        model: Usuario,
+        attributes: ["usuario_id", "nombreCompleto", "correo", "apodo", "url_imagen"]
+      }],
+      order: [["fecha_registro", "DESC"]]
+    });
+  }
 }
 
 export default ParticipacionDAO;

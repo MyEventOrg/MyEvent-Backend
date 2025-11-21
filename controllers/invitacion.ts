@@ -1,8 +1,11 @@
 import { Request, Response } from "express";
 import ParticipacionDAO from "../DAO/participacion";
 import InvitacionDAO from "../DAO/invitacion";
+import NotificacionDAO from "../DAO/notificacion";
+import UsuarioDAO from "../DAO/usuario";
 import EventoDAO from "../DAO/evento";
 import NotificacionController from "./notificacion";
+import InvitacionService from "../services/invitacionService";
 
 class InvitacionController {
 
@@ -56,11 +59,21 @@ class InvitacionController {
             }
 
             // ============================================================
-            //            EVENTO PRIVADO → Crear invitación
+            //            EVENTO PRIVADO → Crear solicitud
             // ============================================================
             if (evento.tipo_evento === "privado") {
 
-                // Obtener organizador
+                // 1. Validar si ya existe una solicitud pendiente
+                const solicitudExistente = await InvitacionDAO.findByEventoAndUsuario(evento_id, usuario_id);
+
+                if (solicitudExistente && solicitudExistente.estado === "pendiente") {
+                    return res.status(400).json({
+                        success: false,
+                        message: "Ya tienes una solicitud pendiente para este evento."
+                    });
+                }
+
+                // 2. Obtener el organizador del evento
                 const organizador = await ParticipacionDAO.findOrganizadorByEventoId(evento_id);
 
                 if (!organizador) {
@@ -70,18 +83,40 @@ class InvitacionController {
                     });
                 }
 
-                await InvitacionDAO.create({
+                // 3. Obtener datos del usuario solicitante
+                const usuarioSolicitante = await UsuarioDAO.findOne(usuario_id);
+                if (!usuarioSolicitante) {
+                    return res.status(404).json({
+                        success: false,
+                        message: "Usuario no encontrado."
+                    });
+                }
+
+                // 3. Crear la solicitud (tipo='solicitud')
+                const solicitud = await InvitacionDAO.create({
                     estado: "pendiente",
-                    mensaje: "Solicitud de invitación al evento.",
+                    mensaje: `${usuarioSolicitante.nombreCompleto} solicita unirse al evento.`,
+                    tipo: "solicitud",  // ← Marca como solicitud
+                    rol_invitacion: "asistente",
                     fecha_invitacion: new Date(),
-                    organizador_id: organizador.usuario_id,
-                    invitado_id: usuario_id,
+                    organizador_id: usuario_id,  // ← El que solicita
+                    invitado_id: organizador.usuario_id,  // ← El organizador
+                    evento_id
+                });
+
+                // 4. Crear notificación para el organizador
+                await NotificacionDAO.create({
+                    tipo: "invitacion",
+                    mensaje: `${usuarioSolicitante.nombreCompleto} solicita asistir a tu evento "${evento.titulo}".`,
+                    visto: false,
+                    fecha_creacion: new Date(),
+                    usuario_id: organizador.usuario_id,
                     evento_id
                 });
 
                 return res.status(200).json({
                     success: true,
-                    message: "Invitación enviada al organizador del evento, favor de estar atento a sus notificaciones."
+                    message: "Solicitud enviada al organizador del evento. Recibirás una notificación cuando sea respondida."
                 });
             }
 
@@ -134,7 +169,7 @@ class InvitacionController {
 
             // 3. Eliminar participación
             await ParticipacionDAO.remove(participacion.participacion_id);
-            
+
             await NotificacionController.notificarAnuloAsistenciaEvento(evento_id, usuario_id);
             return res.status(200).json({
                 success: true,
@@ -149,6 +184,115 @@ class InvitacionController {
             });
         }
     }
+
+    // JUAN-MODIFICACION: Obtener invitación pendiente para mostrar botones en notificación
+    static async obtenerInvitacionPendiente(req: Request, res: Response) {
+        try {
+            const { evento_id, usuario_id } = req.params;
+
+            const invitacion = await InvitacionDAO.findByEventoAndUsuario(
+                Number(evento_id),
+                Number(usuario_id)
+            );
+
+            if (!invitacion || invitacion.get("estado") !== "pendiente") {
+                return res.status(404).json({
+                    success: false,
+                    message: "No hay invitación pendiente"
+                });
+            }
+
+            return res.status(200).json({
+                success: true,
+                data: invitacion
+            });
+        } catch (error) {
+            console.error("Error en obtenerInvitacionPendiente:", error);
+            return res.status(500).json({ success: false, message: "Error interno" });
+        }
+    }
+
+    static async obtenerAsistentesEvento(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const asistentes = await ParticipacionDAO.findAsistentesConUsuario(Number(id));
+            return res.status(200).json({ success: true, data: asistentes || [] });
+        } catch (error) {
+            console.error("Error en obtenerAsistentesEvento:", error);
+            return res.status(500).json({ success: false, message: "Error interno" });
+        }
+    }
+
+    static async obtenerSugeridos(req: Request, res: Response) {
+        try {
+            const { organizador_id } = req.params;
+            const service = new InvitacionService();
+            const correos = await service.obtenerSugeridos(Number(organizador_id));
+            return res.status(200).json({ success: true, data: correos });
+        } catch (error) {
+            console.error("Error en obtenerSugeridos:", error);
+            return res.status(500).json({ success: false, message: "Error interno" });
+        }
+    }
+
+    static async obtenerInvitacionesPendientes(req: Request, res: Response) {
+        try {
+            const { usuario_id } = req.params;
+            const invitaciones = await InvitacionDAO.findPendientesByUsuario(Number(usuario_id));
+            return res.status(200).json({ success: true, data: invitaciones || [] });
+        } catch (error) {
+            console.error("Error en obtenerInvitacionesPendientes:", error);
+            return res.status(500).json({ success: false, message: "Error interno" });
+        }
+    }
+
+
+    static async responderInvitacion(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const { invitado_id, accion } = req.body;
+
+            if (!invitado_id || !accion || !["aceptar", "rechazar"].includes(accion)) {
+                return res.status(400).json({ success: false, message: "Datos inválidos" });
+            }
+
+            const service = new InvitacionService();
+            // invitado_id representa quien responde (invitado en invitación, org/coorg en solicitud)
+            const resultado = await service.responderInvitacion(Number(id), Number(invitado_id), accion);
+
+            return res.status(resultado.success ? 200 : 400).json(resultado);
+
+        } catch (error) {
+            console.error("Error en responderInvitacion:", error);
+            return res.status(500).json({ success: false, message: "Error interno" });
+        }
+    }
+    // JUAN-MODIFICACION: Endpoints de invitaciones (HU40 y HU41)
+
+    static async enviarInvitaciones(req: Request, res: Response) {
+        try {
+            const { evento_id, organizador_id, correos, mensaje } = req.body;
+
+            if (!evento_id || !organizador_id || !correos) {
+                return res.status(400).json({ success: false, message: "Faltan campos requeridos" });
+            }
+
+            const service = new InvitacionService();
+            const resultado = await service.enviarInvitaciones({
+                evento_id: Number(evento_id),
+                organizador_id: Number(organizador_id),
+                correos,
+                mensaje
+            });
+
+            return res.status(resultado.success ? 200 : 400).json(resultado);
+
+        } catch (error) {
+            console.error("Error en enviarInvitaciones:", error);
+            return res.status(500).json({ success: false, message: "Error interno" });
+        }
+    }
+
 }
 
 export default InvitacionController;

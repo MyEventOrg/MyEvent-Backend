@@ -212,6 +212,8 @@ export interface InvitacionAttributes {
   invitacion_id: number;
   estado: InvitacionEstado;
   mensaje?: string | null;
+  // JUAN-MODIFICACION: Tipo para diferenciar invitaciones de solicitudes
+  tipo: 'invitacion' | 'solicitud';
   fecha_invitacion: Date;      // <-- OK para DATETIME
   organizador_id: number;
   invitado_id: number;
@@ -220,7 +222,7 @@ export interface InvitacionAttributes {
 
 export type InvitacionCreationAttributes = Optional<
   InvitacionAttributes,
-  "invitacion_id" | "mensaje"
+  "invitacion_id" | "mensaje" | "tipo"
 >;
 
 export class Invitacion
@@ -229,6 +231,8 @@ export class Invitacion
   public invitacion_id!: number;
   public estado!: InvitacionEstado;
   public mensaje?: string | null;
+  // JUAN-MODIFICACION: Tipo para diferenciar invitaciones de solicitudes
+  public tipo!: 'invitacion' | 'solicitud';
   public fecha_invitacion!: Date;    // <-- OK
   public organizador_id!: number;
   public invitado_id!: number;
@@ -252,6 +256,12 @@ Invitacion.init(
     mensaje: {
       type: DataTypes.STRING(200),
       allowNull: true
+    },
+
+    tipo: {
+      type: DataTypes.ENUM("invitacion", "solicitud"),
+      allowNull: false,
+      defaultValue: "invitacion"
     },
 
     fecha_invitacion: {
@@ -281,6 +291,8 @@ Invitacion.init(
     timestamps: false
   }
 );
+
+
 
 
 /* =========================================================

@@ -49,13 +49,15 @@ CREATE TABLE Participacion (
 );
 
 CREATE TABLE Invitacion (
-    invitacion_id    INT AUTO_INCREMENT PRIMARY KEY,
-    estado           ENUM('pendiente','aceptada','rechazada') DEFAULT 'pendiente',
-    mensaje          VARCHAR(200),
+    invitacion_id INT AUTO_INCREMENT PRIMARY KEY,
+    estado         ENUM('pendiente', 'aceptada', 'rechazada') NOT NULL,
+    mensaje        VARCHAR(300),
+    -- -MODIFICACION: Tipo para diferenciar invitaciones de solicitudes de asistencia
+    tipo           ENUM('invitacion', 'solicitud') NOT NULL DEFAULT 'invitacion',
     fecha_invitacion DATETIME NOT NULL,
-    organizador_id   INT NOT NULL,
-    invitado_id      INT NOT NULL,
-    evento_id        INT NOT NULL,
+    organizador_id INT NOT NULL,
+    invitado_id    INT NOT NULL,
+    evento_id      INT NOT NULL,
     FOREIGN KEY (organizador_id) REFERENCES Usuario(usuario_id),
     FOREIGN KEY (invitado_id)    REFERENCES Usuario(usuario_id),
     FOREIGN KEY (evento_id)      REFERENCES Evento(evento_id)

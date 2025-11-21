@@ -30,7 +30,37 @@ class InvitacionDAO {
       order: [["fecha_invitacion", "DESC"]]  // <--- clave
     });
   }
+  // JUAN-MODIFICACION: Obtener invitaciones pendientes (HU41)
+  static async findPendientesByUsuario(invitado_id: number) {
+    return Invitacion.findAll({
+      where: {
+        invitado_id,
+        estado: "pendiente"
+      },
+      order: [["fecha_invitacion", "DESC"]]
+    });
+  }
 
+  // JUAN-MODIFICACION: Obtener correos sugeridos (HU40)
+  static async findCorreosSugeridosByOrganizador(organizador_id: number): Promise<string[]> {
+    const invitaciones = await Invitacion.findAll({
+      where: { organizador_id },
+      attributes: ["invitado_id"],
+      group: ["invitado_id"]
+    });
+
+    const Usuario = require("../configs/models").Usuario;
+    const usuarioIds = invitaciones.map((inv: any) => inv.invitado_id);
+
+    if (usuarioIds.length === 0) return [];
+
+    const usuarios = await Usuario.findAll({
+      where: { usuario_id: usuarioIds },
+      attributes: ["correo"]
+    });
+
+    return usuarios.map((u: any) => u.correo);
+  }
 }
 
 export default InvitacionDAO;
