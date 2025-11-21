@@ -74,12 +74,12 @@ class InvitacionService {
           continue;
         }
 
-        // JUAN-MODIFICACION: Bloquear si ya rechazó invitación anteriormente
+        // JUAN-MODIFICACION: Verificar si ya existe una invitación
         const invitacionExistente = await InvitacionDAO.findByEventoAndUsuario(data.evento_id, usuario_id);
         if (invitacionExistente) {
           const estado = invitacionExistente.get("estado") as string;
           
-          // Si ya tiene invitación pendiente, bloquear
+          // Si ya tiene invitación pendiente, no hacer nada
           if (estado === "pendiente") {
             resultado.correos_ya_invitados.push(correo);
             continue;
@@ -91,7 +91,45 @@ class InvitacionService {
             continue;
           }
           
-          // Si aceptó (estado === "aceptada"), continuar para verificar participación
+          // Si aceptó, verificar si sigue participando
+          if (estado === "aceptada") {
+            const participacionExistente = await ParticipacionDAO.findByEventoAndUsuario(data.evento_id, usuario_id);
+            
+            // Si aún participa, no se puede re-invitar
+            if (participacionExistente && participacionExistente.length > 0) {
+              resultado.correos_ya_participan.push(correo);
+              continue;
+            }
+            
+            // Si anuló asistencia, actualizar la invitación existente a pendiente
+            await InvitacionDAO.update(invitacionExistente.get("invitacion_id") as number, {
+              estado: "pendiente",
+              mensaje: data.mensaje || null,
+              fecha_invitacion: new Date()
+            });
+
+            // Eliminar notificaciones antiguas de invitación para este usuario y evento
+            const notificacionesAntiguas = await NotificacionDAO.findInvitacionesByUsuarioYEvento(usuario_id, data.evento_id);
+            for (const notif of notificacionesAntiguas) {
+              await NotificacionDAO.remove(notif.get("notificacion_id"));
+            }
+
+            const mensajeNotif = data.mensaje 
+              ? `${organizadorNombre} te invitó como asistente al evento "${eventoTitulo}". Mensaje: "${data.mensaje}"`
+              : `${organizadorNombre} te invitó como asistente al evento "${eventoTitulo}".`;
+
+            await NotificacionDAO.create({
+              usuario_id: usuario_id,
+              evento_id: data.evento_id,
+              mensaje: mensajeNotif,
+              visto: false,
+              tipo: 'invitacion',
+              fecha_creacion: new Date()
+            });
+
+            resultado.invitaciones_enviadas++;
+            continue;
+          }
         }
 
         // JUAN-MODIFICACION: Validar participación existente
@@ -101,12 +139,11 @@ class InvitacionService {
           continue;
         }
 
-        // Crear invitación con botones Aceptar/Rechazar
+        // Crear invitación con botones Aceptar/Rechazar (solo si no existe ninguna)
         await InvitacionDAO.create({
           organizador_id: data.organizador_id,
           invitado_id: usuario_id,
           evento_id: data.evento_id,
-          rol_invitacion: "asistente",
           mensaje: data.mensaje || null,
           estado: "pendiente",
           fecha_invitacion: new Date()

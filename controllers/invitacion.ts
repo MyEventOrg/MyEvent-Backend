@@ -97,7 +97,6 @@ class InvitacionController {
                     estado: "pendiente",
                     mensaje: `${usuarioSolicitante.nombreCompleto} solicita unirse al evento.`,
                     tipo: "solicitud",  // ← Marca como solicitud
-                    rol_invitacion: "asistente",
                     fecha_invitacion: new Date(),
                     organizador_id: usuario_id,  // ← El que solicita
                     invitado_id: organizador.usuario_id,  // ← El organizador

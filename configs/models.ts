@@ -367,13 +367,14 @@ export interface NotificacionAttributes {
   fecha_creacion: Date;
   mensaje: string;
   visto: boolean;
+  tipo: "normal" | "invitacion"; // JUAN-MODIFICACION: Distingue notificaciones normales de invitaciones
   usuario_id: number; // FK
   evento_id: number;  // FK
 }
 
 export type NotificacionCreationAttributes = Optional<
   NotificacionAttributes,
-  "notificacion_id" | "visto"
+  "notificacion_id" | "visto" | "tipo"
 >;
 
 export class Notificacion
@@ -384,6 +385,7 @@ export class Notificacion
   public fecha_creacion!: Date;
   public mensaje!: string;
   public visto!: boolean;
+  public tipo!: "normal" | "invitacion"; // JUAN-MODIFICACION
   public usuario_id!: number;
   public evento_id!: number;
 }
@@ -411,6 +413,13 @@ Notificacion.init(
       type: DataTypes.BOOLEAN,
       allowNull: false,
       defaultValue: false
+    },
+
+    // JUAN-MODIFICACION: Tipo de notificación para diferenciar invitaciones de normales
+    tipo: {
+      type: DataTypes.ENUM("normal", "invitacion"),
+      allowNull: false,
+      defaultValue: "normal"
     },
 
     usuario_id: {
