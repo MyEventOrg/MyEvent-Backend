@@ -27,7 +27,7 @@ class CategoriaDAO {
 
   static async findIdByNombre(nombre: string): Promise<number | null> {
     const categoria = await categoriaRepository.findOneByWhere({
-      nombre: { [Op.like]: `%${nombre}%` }, // ✅ usar like en lugar de iLike
+      nombre: { [Op.like]: `%${nombre}%` },
     });
 
     return categoria?.categoria_id ?? null;

@@ -47,19 +47,19 @@ class EventoController {
                 return res.status(400).json({ success: false, message: "ID de evento requerido" });
             }
 
-            // 1️⃣ Obtener evento
+            // Obtener evento
             const evento = await EventoDAO.findOne(eventoId);
             if (!evento) {
                 return res.status(404).json({ success: false, message: "Evento no encontrado" });
             }
 
-            // 2️⃣ Validar estado
+            // Validar estado
             const estadoEvento = evento.get("estado_evento");
             if (!["activo", "vencido"].includes(estadoEvento)) {
                 return res.status(403).json({ success: false, message: "Este evento no está disponible actualmente" });
             }
 
-            // 3️⃣ Contar asistentes
+            // Contar asistentes
             let asistentesList = [];
             if (usuario_id && !isNaN(usuario_id)) {
                 const participantes = await ParticipacionDAO.findByEventoId(eventoId); // Asegúrate de tener este método
@@ -81,7 +81,7 @@ class EventoController {
             }
 
 
-            // 4️⃣ Determinar rol del usuario (si se pasó)
+            // Determinar rol del usuario (si se pasó)
             let rol: "organizador" | "asistente" | "asistenciapendiente" | "nada" = "nada";
 
             if (usuario_id && !isNaN(usuario_id)) {
@@ -112,7 +112,7 @@ class EventoController {
                 }
             }
 
-            // 5️⃣ Organizador
+            // Organizador
             let organizadorInfo = null;
             const organizador = await ParticipacionDAO.findOrganizadorByEventoId(eventoId);
             if (organizador) {
@@ -127,7 +127,7 @@ class EventoController {
                 }
             }
 
-            // 6️⃣ Categoría
+            // Categoría
             const categoriaId = evento.get("categoria_id");
             let categoriaInfo = null;
 
@@ -141,7 +141,7 @@ class EventoController {
                 }
             }
 
-            // 7️⃣ Preparar respuesta
+            // Preparar respuesta
             const eventoData = {
                 ...(evento.toJSON?.() ?? evento),
                 rol,
@@ -177,7 +177,7 @@ class EventoController {
                 });
             }
 
-            // 1️⃣ Validar que el usuario exista
+            // Validar que el usuario exista
             const validarUsuario = await UsuarioDAO.findOne(usuario_id);
             if (!validarUsuario) {
                 return res.status(404).json({
@@ -186,7 +186,7 @@ class EventoController {
                 });
             }
 
-            // 2️⃣ Validar evento
+            // Validar evento
             if (!eventoId || isNaN(eventoId)) {
                 return res.status(400).json({
                     success: false,
@@ -202,7 +202,7 @@ class EventoController {
                 });
             }
 
-            // 3️⃣ VALIDAR QUE EL USUARIO SEA ORGANIZADOR
+            // VALIDAR QUE EL USUARIO SEA ORGANIZADOR
             const participacion = await ParticipacionDAO.findByEventoAndUsuario(eventoId, usuario_id);
 
             if (!participacion || participacion.length === 0) {
@@ -221,7 +221,7 @@ class EventoController {
                 });
             }
 
-            // 4️⃣ Validar estado de evento
+            // Validar estado de evento
             const estadoEvento = evento.get("estado_evento");
             if (!["activo", "vencido"].includes(estadoEvento)) {
                 return res.status(403).json({
@@ -230,7 +230,7 @@ class EventoController {
                 });
             }
 
-            // 5️⃣ Obtener info del organizador (dejarlo por si lo usas en frontend)
+            // Obtener info del organizador (dejarlo por si lo usas en frontend)
             let organizadorInfo = null;
             const organizador = await ParticipacionDAO.findOrganizadorByEventoId(eventoId);
 
@@ -246,7 +246,7 @@ class EventoController {
                 }
             }
 
-            // 6️⃣ Categoria del evento
+            // Categoria del evento
             const categoriaId = evento.get("categoria_id");
             let categoriaInfo = null;
 
@@ -260,7 +260,7 @@ class EventoController {
                 }
             }
 
-            // 7️⃣ Preparar respuesta final (SOLO evento + categoria + organizador)
+            // Preparar respuesta final (SOLO evento + categoria + organizador)
             const eventoData = {
                 ...(evento.toJSON?.() ?? evento),
                 organizador: organizadorInfo,
@@ -433,7 +433,7 @@ class EventoController {
             const eventoId = Number(id);
 
 
-            // 2️⃣ Validar evento
+            // Validar evento
             if (!eventoId || isNaN(eventoId)) {
                 return res.status(400).json({
                     success: false,
@@ -448,7 +448,7 @@ class EventoController {
                     message: "Evento no encontrado",
                 });
             }
-            // 4️⃣ Validar estado
+            // Validar estado
             const estadoEvento = evento.get("estado_evento");
             if (!["activo", "vencido"].includes(estadoEvento)) {
                 return res.status(403).json({
@@ -457,7 +457,7 @@ class EventoController {
                 });
             }
 
-            // 5️⃣ Procesar subida de PDF (opcional)
+            // Procesar subida de PDF (opcional)
             let pdfUrl = req.body.url_recurso;
             let pdfFile = req.file;
 
@@ -486,7 +486,7 @@ class EventoController {
                 pdfUrl = uploadResult.url;
             }
 
-            // 6️⃣ Construir objeto de UPDATE sin validaciones duplicadas
+            // Construir objeto de UPDATE sin validaciones duplicadas
             const updateData = {
                 titulo: req.body.titulo,
                 descripcion_corta: req.body.descripcion_corta,
@@ -502,7 +502,7 @@ class EventoController {
                 url_recurso: pdfUrl,
             };
 
-            // 7️⃣ Guardar en BD
+            // Guardar en BD
             const updated = await EventoDAO.update(eventoId, updateData);
 
             if (!updated) {
@@ -610,13 +610,13 @@ class EventoController {
 
     static async getEventosFiltrados(req: Request, res: Response) {
         try {
-            // 1️⃣ Validar usuario_id desde la URL
+            // Validar usuario_id desde la URL
             const usuario_id = Number(req.params.usuarioId);
             if (!usuario_id || isNaN(usuario_id)) {
                 return res.status(400).json({ error: "usuario_id inválido en la URL" });
             }
 
-            // 2️⃣ Obtener filtros desde query
+            // Obtener filtros desde query
             const search = (req.query.search as string) || "";
             const tipo = (req.query.tipo as string) || "";
             const categoriaNombre = (req.query.categoria as string) || "Todos";
@@ -627,21 +627,20 @@ class EventoController {
                 if (id) categoria_id = id;
             }
 
-            // 3️⃣ Obtener los eventos filtrados
+            // Obtener los eventos filtrados
             const eventosRaw = await EventoDAO.findFiltered(search, tipo, categoria_id);
 
-            // 4️⃣ Obtener eventos guardados del usuario
+            // Obtener eventos guardados del usuario
             const eventosGuardados = await EventosGuardadosDAO.findByUsuarioId(usuario_id);
             const idsGuardados = new Set(
                 (eventosGuardados || []).map((eg: any) => Number(eg.evento_id))
             );
 
-            // 5️⃣ Adaptar los eventos
+            // Adaptar los eventos
             const eventosAdaptados = await Promise.all(
                 (eventosRaw || []).map(async (evento: any) => {
                     const asistentes = await ParticipacionDAO.countAsistentesByEventoId(evento.evento_id);
 
-                    // ⭐⭐ NUEVA LÓGICA COMPLETA DE ROL (igual a getEvento ⭐⭐)
                     let rol: "organizador" | "asistente" | "asistenciapendiente" | "nada" = "nada";
 
                     // primero buscar participación
@@ -688,7 +687,7 @@ class EventoController {
                 })
             );
 
-            // 6️⃣ Respuesta final
+            // Respuesta final
             return res.status(200).json({
                 data: eventosAdaptados,
                 total: eventosAdaptados.length,
@@ -719,7 +718,7 @@ class EventoController {
                 });
             }
 
-            // 1️⃣ Validar usuario
+            // Validar usuario
             const usuario = await UsuarioDAO.findOne(usuario_id);
             if (!usuario) {
                 return res.status(404).json({
@@ -728,7 +727,7 @@ class EventoController {
                 });
             }
 
-            // 2️⃣ Validar evento
+            // Validar evento
             const evento = await EventoDAO.findOne(eventoId);
             if (!evento) {
                 return res.status(404).json({
@@ -737,7 +736,7 @@ class EventoController {
                 });
             }
 
-            // 3️⃣ Verificar que el usuario sea organizador
+            // Verificar que el usuario sea organizador
             const participacion = await ParticipacionDAO.findByEventoAndUsuario(eventoId, usuario_id);
 
             if (!participacion || participacion.length === 0 || participacion[0].rol_evento !== "organizador") {
@@ -748,7 +747,7 @@ class EventoController {
             }
             await NotificacionController.notificarEliminacionEvento(eventoId);
 
-            // 4️⃣ Eliminar COMENTARIOS del evento
+            // Eliminar COMENTARIOS del evento
             const comentarios = await ComentarioEventoDAO.findAll() || [];
             for (const c of comentarios) {
                 if (c.evento_id === eventoId) {
@@ -756,7 +755,7 @@ class EventoController {
                 }
             }
 
-            // 5️⃣ Eliminar EVENTOS GUARDADOS
+            // Eliminar EVENTOS GUARDADOS
             const guardados = await EventosGuardadosDAO.findAll() || [];
             for (const g of guardados) {
                 if (g.evento_id === eventoId) {
@@ -764,7 +763,7 @@ class EventoController {
                 }
             }
 
-            // 6️⃣ Eliminar INVITACIONES del evento
+            // Eliminar INVITACIONES del evento
             const invitaciones = await InvitacionDAO.findAll() || [];
             for (const i of invitaciones) {
                 if (i.evento_id === eventoId) {
@@ -772,21 +771,21 @@ class EventoController {
                 }
             }
 
-            // 7️⃣ Eliminar PARTICIPACIONES del evento
+            // Eliminar PARTICIPACIONES del evento
             const participaciones = await ParticipacionDAO.findAll() || [];
             for (const p of participaciones) {
                 if (p.evento_id === eventoId) {
                     await ParticipacionDAO.remove(p.participacion_id);
                 }
             }
-            // 7.5️⃣ Eliminar NOTIFICACIONES del evento
+            // Eliminar NOTIFICACIONES del evento
             const notificaciones = await NotificacionDAO.findAll() || [];
             for (const n of notificaciones) {
                 if (n.evento_id === eventoId) {
                     await NotificacionDAO.remove(n.notificacion_id);
                 }
             }
-            // 8️⃣ Finalmente, eliminar el evento
+            // Finalmente, eliminar el evento
             await EventoDAO.remove(eventoId);
 
             return res.status(200).json({

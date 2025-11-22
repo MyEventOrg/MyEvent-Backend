@@ -89,9 +89,6 @@ describe("Recuento real de Likes/Dislikes con 5 usuarios", () => {
         // ================================
         expect(comentarioInicial.likes).toBe(22);
         expect(comentarioInicial.dislikes).toBe(8);
-
-        console.log("👍 Likes finales:", comentarioInicial.likes);
-        console.log("👎 Dislikes finales:", comentarioInicial.dislikes);
     });
 
 });

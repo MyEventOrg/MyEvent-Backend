@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "ts-node server.ts",
     "build": "tsc",
-    "start": "node dist/server.js"
+    "start": "node dist/server.js",
+    "test": "jest"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",
@@ -22,9 +23,6 @@
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "sequelize": "^6.37.7"
-  },
-  "scripts": {
-    "test": "jest"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

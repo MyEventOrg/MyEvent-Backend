@@ -46,6 +46,39 @@ class UsuarioController {
         }
     }
 
+    static async buscarPorCorreo(req: Request, res: Response) {
+        try {
+            const { correo } = req.params;
+
+            if (!correo || correo.trim() === "") {
+                return res.status(400).json({
+                    success: false,
+                    message: "Debe enviar un correo válido"
+                });
+            }
+
+            const usuario = await UsuarioDAO.findByEmail(correo);
+
+            if (!usuario) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Usuario no encontrado"
+                });
+            }
+
+            return res.status(200).json({
+                success: true,
+                data: usuario
+            });
+
+        } catch (error) {
+            console.error("Error en buscarPorCorreo:", error);
+            return res.status(500).json({
+                success: false,
+                message: "Error interno"
+            });
+        }
+    }
 
     static async iniciarSesion(req: Request, res: Response): Promise<Response> {
         try {

@@ -78,29 +78,29 @@ class InvitacionService {
         const invitacionExistente = await InvitacionDAO.findByEventoAndUsuario(data.evento_id, usuario_id);
         if (invitacionExistente) {
           const estado = invitacionExistente.get("estado") as string;
-          
+
           // Si ya tiene invitación pendiente, no hacer nada
           if (estado === "pendiente") {
             resultado.correos_ya_invitados.push(correo);
             continue;
           }
-          
+
           // Si rechazó anteriormente, bloquear permanentemente
           if (estado === "rechazada") {
             resultado.correos_rechazaron.push(correo);
             continue;
           }
-          
+
           // Si aceptó, verificar si sigue participando
           if (estado === "aceptada") {
             const participacionExistente = await ParticipacionDAO.findByEventoAndUsuario(data.evento_id, usuario_id);
-            
+
             // Si aún participa, no se puede re-invitar
             if (participacionExistente && participacionExistente.length > 0) {
               resultado.correos_ya_participan.push(correo);
               continue;
             }
-            
+
             // Si anuló asistencia, actualizar la invitación existente a pendiente
             await InvitacionDAO.update(invitacionExistente.get("invitacion_id") as number, {
               estado: "pendiente",
@@ -114,7 +114,7 @@ class InvitacionService {
               await NotificacionDAO.remove(notif.get("notificacion_id"));
             }
 
-            const mensajeNotif = data.mensaje 
+            const mensajeNotif = data.mensaje
               ? `${organizadorNombre} te invitó como asistente al evento "${eventoTitulo}". Mensaje: "${data.mensaje}"`
               : `${organizadorNombre} te invitó como asistente al evento "${eventoTitulo}".`;
 
@@ -149,7 +149,7 @@ class InvitacionService {
           fecha_invitacion: new Date()
         });
 
-        const mensajeNotif = data.mensaje 
+        const mensajeNotif = data.mensaje
           ? `${organizadorNombre} te invitó como asistente al evento "${eventoTitulo}". Mensaje: "${data.mensaje}"`
           : `${organizadorNombre} te invitó como asistente al evento "${eventoTitulo}".`;
 
@@ -214,14 +214,13 @@ class InvitacionService {
 
   async responderInvitacion(
     invitacion_id: number,
-    usuario_id: number,
+    usuarioQueResponde_id: number,
+    invitado_id: number,
     accion: "aceptar" | "rechazar"
   ): Promise<ResponderInvitacionResult> {
     try {
       const invitacion = await InvitacionDAO.findOne(invitacion_id);
-      if (!invitacion) {
-        return { success: false, message: "Invitación no encontrada" };
-      }
+      if (!invitacion) return { success: false, message: "Invitación no encontrada" };
 
       if (invitacion.get("estado") !== "pendiente") {
         return { success: false, message: "Esta invitación ya fue respondida" };
@@ -230,32 +229,37 @@ class InvitacionService {
       const evento_id = invitacion.get("evento_id") as number;
       const tipo = invitacion.get("tipo") as string;
 
-      // JUAN-MODIFICACION: Diferenciar entre invitación normal y solicitud
+      // ============================================================
+      //              CASO 1: SOLICITUD (aceptar/rechazar)
+      // ============================================================
       if (tipo === "solicitud") {
-        // Es una solicitud de asistencia - quien responde debe ser org/coorg
-        const participacion = await ParticipacionDAO.findByEventoAndUsuario(evento_id, usuario_id);
-        
-        if (!participacion || participacion.length === 0) {
+
+        // 1. Encontrar organizador real
+        const organizador = await ParticipacionDAO.findOrganizadorByEventoId(evento_id);
+
+        if (!organizador) {
+          return { success: false, message: "El evento no tiene organizador registrado" };
+        }
+
+        const organizador_id = organizador.get("usuario_id") as number;
+
+        // 2. Validar que quien responde es el ORGANIZADOR
+        if (usuarioQueResponde_id !== organizador_id) {
           return { success: false, message: "No tienes permisos para responder esta solicitud" };
         }
 
-        const rolUsuario = participacion[0].get("rol_evento") as string;
-        if (rolUsuario !== "organizador") {
-          return { success: false, message: "Solo el organizador puede responder solicitudes" };
-        }
-
-        const solicitante_id = invitacion.get("organizador_id") as number; // Invertido en solicitudes
+        // El solicitante REAL (el que quiere unirse)
+        const solicitante_id = invitacion.get("invitado_id") as number;
 
         if (accion === "aceptar") {
-          // Verificar si ya participa
-          const participacionExistente = await ParticipacionDAO.findByEventoAndUsuario(evento_id, solicitante_id);
+          const existe = await ParticipacionDAO.findByEventoAndUsuario(evento_id, solicitante_id);
 
-          if (participacionExistente && participacionExistente.length > 0) {
+          if (existe && existe.length > 0) {
             await InvitacionDAO.update(invitacion_id, { estado: "aceptada" });
-            return { success: true, message: "El usuario ya participa en el evento", participacion_creada: false };
+            return { success: true, message: "El usuario ya participa en el evento" };
           }
 
-          // Crear participación del solicitante
+          // Crear participación
           await ParticipacionDAO.create({
             usuario_id: solicitante_id,
             evento_id,
@@ -265,65 +269,45 @@ class InvitacionService {
 
           await InvitacionDAO.update(invitacion_id, { estado: "aceptada" });
 
-          // Notificar al solicitante
-          const evento = await EventoDAO.findOne(evento_id);
-          await NotificacionDAO.create({
-            usuario_id: solicitante_id,
-            evento_id,
-            mensaje: `Tu solicitud para el evento "${evento?.get("titulo")}" fue aceptada. ¡Ya eres parte del evento!`,
-            visto: false,
-            tipo: 'normal',
-            fecha_creacion: new Date()
-          });
-
-          return { success: true, message: "Solicitud aceptada. El usuario ahora es parte del evento", participacion_creada: true };
-        } else {
-          await InvitacionDAO.update(invitacion_id, { estado: "rechazada" });
-
-          // Notificar al solicitante del rechazo
-          const evento = await EventoDAO.findOne(evento_id);
-          await NotificacionDAO.create({
-            usuario_id: solicitante_id,
-            evento_id,
-            mensaje: `Tu solicitud para el evento "${evento?.get("titulo")}" fue rechazada.`,
-            visto: false,
-            tipo: 'normal',
-            fecha_creacion: new Date()
-          });
-
-          return { success: true, message: "Solicitud rechazada" };
+          return { success: true, message: "Solicitud aceptada. Ahora es parte del evento" };
         }
 
-      } else {
-        // Es una invitación normal - quien responde es el invitado
-        const invitado_id = invitacion.get("invitado_id") as number;
-
-        if (invitado_id !== usuario_id) {
-          return { success: false, message: "No tienes permisos para responder esta invitación" };
-        }
-
-        if (accion === "aceptar") {
-          const participacionExistente = await ParticipacionDAO.findByEventoAndUsuario(evento_id, invitado_id);
-
-          if (participacionExistente && participacionExistente.length > 0) {
-            await InvitacionDAO.update(invitacion_id, { estado: "aceptada" });
-            return { success: true, message: "Ya estabas participando en este evento", participacion_creada: false };
-          }
-
-          await ParticipacionDAO.create({
-            usuario_id: invitado_id,
-            evento_id,
-            rol_evento: "asistente",
-            fecha_registro: new Date()
-          });
-
-          await InvitacionDAO.update(invitacion_id, { estado: "aceptada" });
-          return { success: true, message: "Invitación aceptada. Ahora eres parte del evento", participacion_creada: true };
-        } else {
-          await InvitacionDAO.update(invitacion_id, { estado: "rechazada" });
-          return { success: true, message: "Invitación rechazada" };
-        }
+        await InvitacionDAO.update(invitacion_id, { estado: "rechazada" });
+        return { success: true, message: "Solicitud rechazada" };
       }
+
+      // ============================================================
+      //              CASO 2: INVITACIÓN NORMAL
+      // ============================================================
+      const invitadoOriginal_id = invitacion.get("invitado_id") as number;
+
+      // Validar que el que responde ES el invitado
+      if (usuarioQueResponde_id !== invitadoOriginal_id) {
+        return { success: false, message: "No tienes permisos para responder esta invitación" };
+      }
+
+      if (accion === "aceptar") {
+        const existe = await ParticipacionDAO.findByEventoAndUsuario(evento_id, invitadoOriginal_id);
+
+        if (existe && existe.length > 0) {
+          await InvitacionDAO.update(invitacion_id, { estado: "aceptada" });
+          return { success: true, message: "Ya participabas en este evento" };
+        }
+
+        await ParticipacionDAO.create({
+          usuario_id: invitadoOriginal_id,
+          evento_id,
+          rol_evento: "asistente",
+          fecha_registro: new Date()
+        });
+
+        await InvitacionDAO.update(invitacion_id, { estado: "aceptada" });
+
+        return { success: true, message: "Invitación aceptada. Ya eres parte del evento" };
+      }
+
+      await InvitacionDAO.update(invitacion_id, { estado: "rechazada" });
+      return { success: true, message: "Invitación rechazada" };
 
     } catch (error) {
       console.error("Error en responderInvitacion:", error);

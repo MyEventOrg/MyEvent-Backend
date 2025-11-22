@@ -6,9 +6,7 @@ const eventoRepository = new BaseRepository<Evento>(Evento);
 
 class EventoDAO {
 
-  // ============================================================
-  // 🔥 FUNCIÓN CENTRAL: Determina si un evento debe ser VENCIDO
-  // ============================================================
+
   static async checkAndUpdateVencido(evento: any) {
     if (!evento) return evento;
 
@@ -32,9 +30,7 @@ class EventoDAO {
     return evento;
   }
 
-  // ============================================================
-  // Métodos CRUD
-  // ============================================================
+
   static async findAll() {
     const eventos = await eventoRepository.findAll() ?? [];
     return Promise.all(eventos.map(e => this.checkAndUpdateVencido(e)));
@@ -57,9 +53,7 @@ class EventoDAO {
     return eventoRepository.remove(id);
   }
 
-  // ============================================================
-  // Eventos Públicos paginados
-  // ============================================================
+
   static async findPublicEvents(page: number, limit: number) {
     const offset = (page - 1) * limit;
 
@@ -72,7 +66,7 @@ class EventoDAO {
 
     let eventos = await Promise.all(rows.map(e => this.checkAndUpdateVencido(e)));
 
-    // ⬇ ORDENAR (vencido al final)
+
     eventos = eventos.sort((a: any, b: any) => {
       const aV = a.estado_evento === "vencido" ? 1 : 0;
       const bV = b.estado_evento === "vencido" ? 1 : 0;
@@ -88,10 +82,6 @@ class EventoDAO {
   }
 
 
-
-  // ============================================================
-  // Eventos Privados Paginados
-  // ============================================================
   static async findPrivateEvents(page: number, limit: number) {
     const offset = (page - 1) * limit;
 
@@ -119,9 +109,6 @@ class EventoDAO {
   }
 
 
-  // ============================================================
-  // Buscar por IDs activos
-  // ============================================================
   static async findByIdsActivos(eventoIds: number[]) {
     if (!eventoIds?.length) return [];
     const eventos = await Evento.findAll({
@@ -135,9 +122,7 @@ class EventoDAO {
     return Promise.all(eventos.map(e => this.checkAndUpdateVencido(e)));
   }
 
-  // ============================================================
-  // Buscar por IDs activos y vencidos
-  // ============================================================
+
   static async findByIdsActivosAndVencidos(eventoIds: number[]) {
     if (!eventoIds?.length) return [];
 
@@ -152,9 +137,7 @@ class EventoDAO {
     return Promise.all(eventos.map(e => this.checkAndUpdateVencido(e)));
   }
 
-  // ============================================================
-  // Buscar por IDs sin filtro
-  // ============================================================
+
   static async findByIds(eventoIds: number[]) {
     if (!eventoIds?.length) return [];
 
@@ -168,9 +151,7 @@ class EventoDAO {
     return Promise.all(eventos.map(e => this.checkAndUpdateVencido(e)));
   }
 
-  // ============================================================
-  // Filtros: search, tipo, categoría
-  // ============================================================
+
   static async findFiltered(
     search: string = "",
     tipo: string = "",

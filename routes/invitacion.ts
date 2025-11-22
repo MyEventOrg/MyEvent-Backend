@@ -1,5 +1,7 @@
 import { Router } from "express";
 import InvitacionController from "../controllers/invitacion";
+import UsuarioController from "../controllers/usuario";
+
 
 const router = Router();
 
@@ -15,5 +17,8 @@ router.get("/invitaciones/pendientes/:usuario_id", InvitacionController.obtenerI
 router.get("/invitaciones/sugeridos/:organizador_id", InvitacionController.obtenerSugeridos);
 router.get("/evento/:id/asistentes", InvitacionController.obtenerAsistentesEvento);
 router.get("/invitaciones/:evento_id/:usuario_id", InvitacionController.obtenerInvitacionPendiente);
+
+
+router.get("/usuarios/buscarPorCorreo/:correo", UsuarioController.buscarPorCorreo);
 
 export default router;

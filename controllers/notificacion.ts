@@ -48,7 +48,7 @@ class NotificacionController {
                 });
             }
 
-            // 🟢 Actualiza usando tu BaseRepository sin problema
+            // Actualiza usando tu BaseRepository sin problema
             const updated = await NotificacionDAO.update(
                 Number(notificacion_id),
                 { visto: true }
@@ -235,12 +235,12 @@ class NotificacionController {
 
             const titulo = evento.get("titulo");
 
-            // 🟦 Obtener asistente
+            // Obtener asistente
             const asistente = await UsuarioDAO.findOne(usuario_id);
             if (!asistente) return;
             const correoAsistente = asistente.get("correo");
 
-            // 🟧 Obtener organizador
+            // Obtener organizador
             const organizador = await ParticipacionDAO.findOrganizadorByEventoId(evento_id);
             if (!organizador) return;
 
@@ -248,14 +248,14 @@ class NotificacionController {
             if (!organizadorUser) return;
             const correoOrganizador = organizadorUser.get("correo");
 
-            // 🕒 Fecha formato MySQL
+            // Fecha formato MySQL
             const ahora = new Date();
             const fecha_creacion =
                 `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}-${String(ahora.getDate()).padStart(2, '0')} ` +
                 `${String(ahora.getHours()).padStart(2, '0')}:${String(ahora.getMinutes()).padStart(2, '0')}:${String(ahora.getSeconds()).padStart(2, '0')}`;
 
             // ============================================================
-            // 🟩 1. NOTIFICACIÓN INTERNA PARA EL ASISTENTE
+            // 1. NOTIFICACIÓN INTERNA PARA EL ASISTENTE
             // ============================================================
             await NotificacionDAO.create({
                 usuario_id,
@@ -266,7 +266,7 @@ class NotificacionController {
             });
 
             // ============================================================
-            // 🟪 2. NOTIFICACIÓN INTERNA PARA EL ORGANIZADOR
+            // 2. NOTIFICACIÓN INTERNA PARA EL ORGANIZADOR
             // ============================================================
             await NotificacionDAO.create({
                 usuario_id: organizador.usuario_id,
@@ -329,13 +329,13 @@ class NotificacionController {
 
             const titulo = evento.get("titulo");
 
-            // 🟦 Obtener asistente (quien se retiró)
+            // Obtener asistente (quien se retiró)
             const asistente = await UsuarioDAO.findOne(usuario_id);
             if (!asistente) return;
 
             const correoAsistente = asistente.get("correo");
 
-            // 🟧 Obtener organizador
+            // Obtener organizador
             const organizador = await ParticipacionDAO.findOrganizadorByEventoId(evento_id);
             if (!organizador) return;
 
@@ -344,14 +344,14 @@ class NotificacionController {
 
             const correoOrganizador = organizadorUser.get("correo");
 
-            // 🕒 Fecha formato MySQL
+            // Fecha formato MySQL
             const ahora = new Date();
             const fecha_creacion =
                 `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}-${String(ahora.getDate()).padStart(2, '0')} ` +
                 `${String(ahora.getHours()).padStart(2, '0')}:${String(ahora.getMinutes()).padStart(2, '0')}:${String(ahora.getSeconds()).padStart(2, '0')}`;
 
             // ============================================================
-            // 🟩 1. NOTIFICACIÓN INTERNA PARA EL ASISTENTE
+            // 1. NOTIFICACIÓN INTERNA PARA EL ASISTENTE
             // ============================================================
             await NotificacionDAO.create({
                 usuario_id,
@@ -362,7 +362,7 @@ class NotificacionController {
             });
 
             // ============================================================
-            // 🟪 2. NOTIFICACIÓN INTERNA PARA EL ORGANIZADOR
+            // 2. NOTIFICACIÓN INTERNA PARA EL ORGANIZADOR
             // ============================================================
             await NotificacionDAO.create({
                 usuario_id: organizador.usuario_id,

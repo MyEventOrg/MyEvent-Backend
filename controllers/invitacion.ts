@@ -106,7 +106,7 @@ class InvitacionController {
                 // 4. Crear notificación para el organizador
                 await NotificacionDAO.create({
                     tipo: "invitacion",
-                    mensaje: `${usuarioSolicitante.nombreCompleto} solicita asistir a tu evento "${evento.titulo}".`,
+                    mensaje: `${usuarioSolicitante.nombreCompleto} de correo: "${usuarioSolicitante.correo}" solicita asistir a tu evento "${evento.titulo}".`,
                     visto: false,
                     fecha_creacion: new Date(),
                     usuario_id: organizador.usuario_id,
@@ -134,7 +134,7 @@ class InvitacionController {
         }
     }
 
-    // 🔥 ANULAR ASISTENCIA
+    // ANULAR ASISTENCIA
     static async anularAsistenciaEvento(req: Request, res: Response) {
         try {
             const { evento_id, usuario_id } = req.body;
@@ -249,7 +249,7 @@ class InvitacionController {
     static async responderInvitacion(req: Request, res: Response) {
         try {
             const { id } = req.params;
-            const { invitado_id, accion } = req.body;
+            const { usuarioQueResponde_id, invitado_id, accion } = req.body;
 
             if (!invitado_id || !accion || !["aceptar", "rechazar"].includes(accion)) {
                 return res.status(400).json({ success: false, message: "Datos inválidos" });
@@ -257,7 +257,12 @@ class InvitacionController {
 
             const service = new InvitacionService();
             // invitado_id representa quien responde (invitado en invitación, org/coorg en solicitud)
-            const resultado = await service.responderInvitacion(Number(id), Number(invitado_id), accion);
+            const resultado = await service.responderInvitacion(
+                Number(id),
+                Number(usuarioQueResponde_id),   // quien responde (organizador o invitado)
+                Number(invitado_id),             // quien será agregado si se acepta
+                accion
+            );
 
             return res.status(resultado.success ? 200 : 400).json(resultado);
 

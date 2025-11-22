@@ -27,7 +27,7 @@ class InvitacionDAO {
   static async findByEventoAndUsuario(evento_id: number, invitado_id: number) {
     return Invitacion.findOne({
       where: { evento_id, invitado_id },
-      order: [["fecha_invitacion", "DESC"]]  // <--- clave
+      order: [["fecha_invitacion", "DESC"]]
     });
   }
   // JUAN-MODIFICACION: Obtener invitaciones pendientes (HU41)
