@@ -25,7 +25,7 @@
   },
   "scripts": {
     "test": "jest"
-  }
+  },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@types/cookie-parser": "^1.4.9",
