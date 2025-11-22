@@ -168,7 +168,9 @@ class InvitacionController {
 
             // 3. Eliminar participación
             await ParticipacionDAO.remove(participacion.participacion_id);
-
+            // 4. Eliminar TODAS las invitaciones relacionadas al evento y al usuario
+            await InvitacionDAO.removeByEventoAndInvitado(evento_id, usuario_id);
+            
             await NotificacionController.notificarAnuloAsistenciaEvento(evento_id, usuario_id);
             return res.status(200).json({
                 success: true,

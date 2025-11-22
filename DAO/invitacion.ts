@@ -40,7 +40,14 @@ class InvitacionDAO {
       order: [["fecha_invitacion", "DESC"]]
     });
   }
-
+  static async removeByEventoAndInvitado(evento_id: number, invitado_id: number) {
+    return Invitacion.destroy({
+      where: {
+        evento_id,
+        invitado_id
+      }
+    });
+  }
   // JUAN-MODIFICACION: Obtener correos sugeridos (HU40)
   static async findCorreosSugeridosByOrganizador(organizador_id: number): Promise<string[]> {
     const invitaciones = await Invitacion.findAll({
