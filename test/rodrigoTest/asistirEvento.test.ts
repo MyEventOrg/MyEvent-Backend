@@ -34,24 +34,24 @@ describe("asistenciaEvento - usuario NO participa y evento público", () => {
         const evento_id = 10;
         const usuario_id = 5;
 
-        // 1️⃣ Mock del evento (evento público)
+        // Mock del evento (evento público)
         (EventoDAO.findOne as jest.Mock).mockResolvedValue({
             evento_id,
             titulo: "Evento Público Test",
             tipo_evento: "publico"
         });
 
-        // 2️⃣ Usuario NO participa → EXISTENTE = []
+        // Usuario NO participa → EXISTENTE = []
         (ParticipacionDAO.findByEventoAndUsuario as jest.Mock).mockResolvedValue([]);
 
-        // 3️⃣ Mock de create (para registrar asistencia)
+        // Mock de create (para registrar asistencia)
         (ParticipacionDAO.create as jest.Mock).mockResolvedValue({
             evento_id,
             usuario_id,
             rol_evento: "asistente"
         });
 
-        // 4️⃣ Notificación se ignora completamente
+        // Notificación se ignora completamente
         (NotificacionController.notificarAsistenciaEvento as jest.Mock).mockResolvedValue(true);
 
         // req y res simulados

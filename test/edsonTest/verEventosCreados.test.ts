@@ -1,6 +1,6 @@
 /**
  * ===============================================================
- * 🧪 TEST: Flujo completo → updateEstado + getMisEventosCreados
+ * TEST: Flujo completo → updateEstado + getMisEventosCreados
  * ===============================================================
  *
  * ✔ Simulación real:
@@ -37,13 +37,13 @@ describe("Flujo completo: updateEstado → getMisEventosCreados", () => {
 
     it("Debe retornar 2 eventos activados por el admin", async () => {
 
-        // 1️⃣ MOCK: Participaciones del usuario (organizador)
+        // MOCK: Participaciones del usuario (organizador)
         (ParticipacionDAO.findByUsuarioIdAndRoles as jest.Mock).mockResolvedValue([
             { evento_id: 10 },
             { evento_id: 20 }
         ]);
 
-        // 2️⃣ MOCK: Eventos internos del "estado"
+        // MOCK: Eventos internos del "estado"
         let eventosMock: Record<number, any> = {
             10: { evento_id: 10, titulo: "Evento A", estado_evento: "pendiente" },
             20: { evento_id: 20, titulo: "Evento B", estado_evento: "pendiente" }
@@ -91,7 +91,7 @@ describe("Flujo completo: updateEstado → getMisEventosCreados", () => {
         expect(eventosMock[20].estado_evento).toBe("activo");
 
 
-        // 4️⃣ Invocar MisEventos
+        // Invocar MisEventos
         const req: any = { params: { usuarioId: "5" } };
         const res: any = {
             status: jest.fn().mockReturnThis(),
@@ -103,7 +103,7 @@ describe("Flujo completo: updateEstado → getMisEventosCreados", () => {
         const respuesta = res.json.mock.calls[0][0];
 
 
-        // 5️⃣ Validaciones
+        // Validaciones
         expect(res.status).toHaveBeenCalledWith(200);
         expect(respuesta.success).toBe(true);
         expect(respuesta.data.total).toBe(2);

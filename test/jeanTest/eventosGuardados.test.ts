@@ -1,6 +1,6 @@
 /**
  * ================================================================
- * 🧪 TEST: guardarEvento → devolverEventosGuardados
+ * TEST: guardarEvento → devolverEventosGuardados
  * ================================================================
  *
  * ✔ Caso simulado:
@@ -20,7 +20,7 @@ import EventosGuardadoDAO from "../../DAO/eventosGuardado";
 import EventoDAO from "../../DAO/evento";
 import ParticipacionDAO from "../../DAO/participacion";
 
-// 🔵 Mockear DAOs
+// Mockear DAOs
 jest.mock("../../DAO/eventosGuardado");
 jest.mock("../../DAO/evento");
 jest.mock("../../DAO/participacion");

@@ -1,6 +1,6 @@
 /**
  * ===============================================================
- * 🧪 TEST: anularAsistenciaEvento — usuario ya NO está inscrito
+ * TEST: anularAsistenciaEvento — usuario ya NO está inscrito
  * ===============================================================
  *
  * ✔ Caso:
@@ -30,7 +30,7 @@ describe("anularAsistenciaEvento — usuario ya no está inscrito", () => {
         const evento_id = 10;
         const usuario_id = 5;
 
-        // 1️⃣ Primera llamada → sí está inscrito (asistente)
+        // Primera llamada → sí está inscrito (asistente)
         (ParticipacionDAO.findByEventoAndUsuario as jest.Mock)
             .mockResolvedValueOnce([
                 {
@@ -40,7 +40,7 @@ describe("anularAsistenciaEvento — usuario ya no está inscrito", () => {
                     rol_evento: "asistente"
                 }
             ])
-            // 2️⃣ Segunda llamada → ya NO está inscrito
+            // Segunda llamada → ya NO está inscrito
             .mockResolvedValueOnce([]);
 
         // Mock remove

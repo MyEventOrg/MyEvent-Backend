@@ -1,6 +1,6 @@
 /**
  * ===============================================================
- * 🧪 TEST: getEventosFiltrados — search = "Evento"
+ * TEST: getEventosFiltrados — search = "Evento"
  * ===============================================================
  *
  * ✔ Caso:

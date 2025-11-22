@@ -1,6 +1,6 @@
 /**
  * ===============================================================
- * 🧪 TEST: getEventosAsistidos → Usuario 2 asiste a 2 eventos
+ * TEST: getEventosAsistidos → Usuario 2 asiste a 2 eventos
  * ===============================================================
  *
  * ✔ Caso simulado:
@@ -29,7 +29,7 @@ describe("getEventosAsistidos - usuario 2 asistiendo a 2 eventos", () => {
     it("Debe retornar 2 eventos asistidos", async () => {
 
         // ================================
-        // 1️⃣ Mock: Participación del usuario
+        // Mock: Participación del usuario
         // ================================
         (ParticipacionDAO.findByUsuarioIdAndRoles as jest.Mock).mockResolvedValue([
             { evento_id: 6 },
@@ -37,7 +37,7 @@ describe("getEventosAsistidos - usuario 2 asistiendo a 2 eventos", () => {
         ]);
 
         // ================================
-        // 2️⃣ Mock: Datos de los eventos
+        // Mock: Datos de los eventos
         // ================================
         const eventosMock: any = {
             6: { evento_id: 6, titulo: "Evento 6", estado_evento: "activo" },
@@ -49,12 +49,12 @@ describe("getEventosAsistidos - usuario 2 asistiendo a 2 eventos", () => {
         });
 
         // ================================
-        // 3️⃣ Mock: asistentes count
+        // Mock: asistentes count
         // ================================
         (ParticipacionDAO.countAsistentesByEventoId as jest.Mock).mockResolvedValue(0);
 
         // ================================
-        // 4️⃣ Simular req / res
+        // Simular req / res
         // ================================
         const req: any = { params: { usuarioId: "2" } };
 
@@ -67,7 +67,7 @@ describe("getEventosAsistidos - usuario 2 asistiendo a 2 eventos", () => {
         await AsistenciaController.getEventosAsistidos(req, res);
 
         // ================================
-        // 5️⃣ Validaciones
+        // Validaciones
         // ================================
         const respuesta = res.json.mock.calls[0][0];
 

@@ -23,7 +23,7 @@ describe("updateEvento — editar título del evento", () => {
 
         const evento_id = 10;
 
-        // 1️⃣ Mock: el evento existe y está activo
+        // Mock: el evento existe y está activo
         (EventoDAO.findOne as jest.Mock).mockResolvedValue({
             get: (field: string) => {
                 if (field === "estado_evento") return "activo";
@@ -31,10 +31,10 @@ describe("updateEvento — editar título del evento", () => {
             }
         });
 
-        // 2️⃣ Mock: actualización exitosa
+        // Mock: actualización exitosa
         (EventoDAO.update as jest.Mock).mockResolvedValue(true);
 
-        // 3️⃣ req y res simulados
+        // req y res simulados
         const req: any = {
             params: { id: evento_id.toString() },
             body: {
@@ -55,10 +55,10 @@ describe("updateEvento — editar título del evento", () => {
             json: jest.fn(),
         };
 
-        // 4️⃣ Ejecutar controlador
+        // Ejecutar controlador
         await EventoController.updateEvento(req as any, res as any);
 
-        // 5️⃣ Validar que llamaste a update con el nuevo título
+        // Validar que llamaste a update con el nuevo título
         expect(EventoDAO.update).toHaveBeenCalledWith(
             evento_id,
             expect.objectContaining({
@@ -66,7 +66,7 @@ describe("updateEvento — editar título del evento", () => {
             })
         );
 
-        // 6️⃣ Validar respuesta final
+        // Validar respuesta final
         expect(res.status).toHaveBeenCalledWith(200);
 
         const resp = res.json.mock.calls[0][0];

@@ -1,6 +1,6 @@
 /**
  * ===============================================================
- * 🧪 TEST: deleteEvento — eliminar un evento
+ * TEST: deleteEvento — eliminar un evento
  * ===============================================================
  *
  * ✔ Caso:
@@ -27,13 +27,13 @@ describe("deleteEvento — eliminar un evento correctamente", () => {
         const evento_id = 10;
         const usuario_id = 1;
 
-        // 1️⃣ Usuario existe
+        // Usuario existe
         (UsuarioDAO.findOne as jest.Mock).mockResolvedValue({
             usuario_id,
             get: () => usuario_id
         });
 
-        // 2️⃣ Evento existe
+        // Evento existe
         (EventoDAO.findOne as jest.Mock)
             // primera llamada → existe
             .mockResolvedValueOnce({
@@ -43,12 +43,12 @@ describe("deleteEvento — eliminar un evento correctamente", () => {
             // segunda llamada → después de eliminar → ya NO existe
             .mockResolvedValueOnce(null);
 
-        // 3️⃣ Usuario es organizador
+        // Usuario es organizador
         (ParticipacionDAO.findByEventoAndUsuario as jest.Mock).mockResolvedValue([
             { rol_evento: "organizador" }
         ]);
 
-        // 4️⃣ Mock para EventoDAO.remove (eliminación)
+        // ventoDAO.remove (eliminación)
         (EventoDAO.remove as jest.Mock).mockResolvedValue(true);
 
         // req y res
@@ -62,16 +62,16 @@ describe("deleteEvento — eliminar un evento correctamente", () => {
             json: jest.fn()
         };
 
-        // 🧪 5️⃣ Ejecutar eliminación
+        // Ejecutar eliminación
         await EventoController.deleteEvento(req, res);
 
-        // 6️⃣ Validar que eliminó correctamente
+        // Validar que eliminó correctamente
         expect(res.status).toHaveBeenCalledWith(200);
 
         const resp = res.json.mock.calls[0][0];
         expect(resp.success).toBe(true);
 
-        // 🧠 7️⃣ Simular llamada posterior a findOne
+        // Simular llamada posterior a findOne
         const eventoDespues = await EventoDAO.findOne(evento_id);
 
         // ✔ Lo esperado: ya no existe
