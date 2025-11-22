@@ -46,7 +46,7 @@ class NotificacionDAO {
         });
     }
 
-    // JUAN-MODIFICACION: Obtener notificaciones filtrando invitaciones ya respondidas
+    // Obtener notificaciones priorizando invitaciones más recientes (solo 1 por evento)
     static async findByUserOrderedConInvitacionesPendientes(usuario_id: number) {
         const { Invitacion } = require("../configs/models");
         const UsuarioDAO = require("../DAO/usuario").default;
@@ -61,40 +61,46 @@ class NotificacionDAO {
 
         const notificacionesFiltradas = [];
 
+        // Para evitar devolver varias notificaciones del mismo evento invitación
+        const invitacionesProcesadas = new Set<string>();
+
         for (const n of notificaciones) {
             const tipo = n.get("tipo");
             const mensaje = n.get("mensaje");
+            const evento_id = n.get("evento_id");
 
-            // Si no es invitación → incluir normal
+            // ============================
+            // CASE 1: NO ES INVITACIÓN → agregar directo
+            // ============================
             if (tipo !== "invitacion") {
                 notificacionesFiltradas.push(n);
                 continue;
             }
 
             // ============================
-            // 1. ¿El mensaje contiene un correo?
+            // CASE 2: ES INVITACIÓN
             // ============================
-            let invitadoIdFinal = usuario_id; // por defecto se usa el id original
 
+            // A) Extraer correo si existe
+            let invitadoIdFinal = usuario_id;
             const match = mensaje.match(/de correo:\s*"([^"]+)"/);
             const correoExtraido = match ? match[1] : null;
 
             if (correoExtraido) {
-                // ============================
-                // 2. Buscar usuario por correo
-                // ============================
                 const usuarioEncontrado = await UsuarioDAO.findByEmail(correoExtraido);
-
                 if (usuarioEncontrado) {
                     invitadoIdFinal = usuarioEncontrado.usuario_id;
                 }
             }
 
-            // ============================
-            // 3. Buscar invitación del usuario correcto
-            // ============================
-            const evento_id = n.get("evento_id");
+            // KEY para evitar duplicados por evento + invitado
+            const key = `${evento_id}-${invitadoIdFinal}`;
 
+            if (invitacionesProcesadas.has(key)) {
+                continue; // ya se devolvió la más reciente
+            }
+
+            // B) Buscar invitación más reciente
             const invitacion = await Invitacion.findOne({
                 where: {
                     evento_id,
@@ -103,16 +109,18 @@ class NotificacionDAO {
                 order: [["fecha_invitacion", "DESC"]]
             });
 
-            // ============================
-            // 4. Solo mostrar si está pendiente
-            // ============================
+            // C) Solo agregar si está pendiente
             if (invitacion && invitacion.get("estado") === "pendiente") {
                 notificacionesFiltradas.push(n);
+
+                // Marcamos como procesada para no repetir este evento + invitado
+                invitacionesProcesadas.add(key);
             }
         }
 
         return notificacionesFiltradas;
     }
+
 
 }
 
