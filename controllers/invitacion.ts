@@ -98,8 +98,8 @@ class InvitacionController {
                     mensaje: `${usuarioSolicitante.nombreCompleto} solicita unirse al evento.`,
                     tipo: "solicitud",  // ← Marca como solicitud
                     fecha_invitacion: new Date(),
-                    organizador_id: usuario_id,  // ← El que solicita
-                    invitado_id: organizador.usuario_id,  // ← El organizador
+                    organizador_id: organizador.usuario_id,
+                    invitado_id: usuario_id,
                     evento_id
                 });
 
