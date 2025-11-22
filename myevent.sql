@@ -40,7 +40,7 @@ CREATE TABLE Participacion (
     participacion_id INT AUTO_INCREMENT PRIMARY KEY,
     fecha_registro   DATE NOT NULL,
     fecha_actualizada DATE,
-    rol_evento       VARCHAR(20) NOT NULL, -- "organizador"/"coorganizador"/"asistente"
+    rol_evento       VARCHAR(20) NOT NULL, -- "organizador"/"asistente"
     usuario_id       INT NOT NULL,
     evento_id        INT NOT NULL,
     UNIQUE (usuario_id, evento_id),
@@ -101,8 +101,8 @@ CREATE TABLE Notificacion (
 INSERT INTO Usuario 
 (nombreCompleto, correo, contrasena, fecha_registro, activo, rol, apodo, url_imagen)
 VALUES 
-('Juan Pérez', 'juanperez@mail.com', '$2b$10$lNh22615WpWaoFmpW9viS.mKEP8Eo8v8oc5q70amv7PQmkRsEYJAC', '2025-09-01', TRUE, 'user', 'juanito', 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSIxV4CHZh8ZV44O5maRb5Vv8rYnYCeLPPhag&s'),
-('María Gómez', 'mariag@mail.com', '$2b$10$lNh22615WpWaoFmpW9viS.mKEP8Eo8v8oc5q70amv7PQmkRsEYJAC', '2025-09-05', TRUE, 'user', 'mary', 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSIxV4CHZh8ZV44O5maRb5Vv8rYnYCeLPPhag&s'),
+('Juan Pérez', 'silveraarturo199@gmail.com', '$2b$10$lNh22615WpWaoFmpW9viS.mKEP8Eo8v8oc5q70amv7PQmkRsEYJAC', '2025-09-01', TRUE, 'user', 'juanito', 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSIxV4CHZh8ZV44O5maRb5Vv8rYnYCeLPPhag&s'),
+('María Gómez', '20204965@aloe.ulima.edu.pe', '$2b$10$lNh22615WpWaoFmpW9viS.mKEP8Eo8v8oc5q70amv7PQmkRsEYJAC', '2025-09-05', TRUE, 'user', 'mary', 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSIxV4CHZh8ZV44O5maRb5Vv8rYnYCeLPPhag&s'),
 ('Admin Master', 'admin@mail.com', '$2b$10$lNh22615WpWaoFmpW9viS.mKEP8Eo8v8oc5q70amv7PQmkRsEYJAC', '2025-09-10', TRUE, 'admin', 'root', NULL);
 
 
@@ -246,18 +246,28 @@ VALUES
 -- Juan crea el evento Tech Conference (organizador)
 INSERT INTO Participacion (fecha_registro, rol_evento, usuario_id, evento_id)
 VALUES ('2025-09-15', 'organizador', 1, 1);
+INSERT INTO Participacion (fecha_registro, rol_evento, usuario_id, evento_id)
+VALUES ('2025-09-15', 'organizador', 1, 2);
+INSERT INTO Participacion (fecha_registro, rol_evento, usuario_id, evento_id)
+VALUES ('2025-09-15', 'organizador', 1, 3);
+INSERT INTO Participacion (fecha_registro, rol_evento, usuario_id, evento_id)
+VALUES ('2025-09-15', 'organizador', 1, 4);
+INSERT INTO Participacion (fecha_registro, rol_evento, usuario_id, evento_id)
+VALUES ('2025-09-15', 'organizador', 1, 5);
+INSERT INTO Participacion (fecha_registro, rol_evento, usuario_id, evento_id)
+VALUES ('2025-09-15', 'organizador', 1, 6);
+INSERT INTO Participacion (fecha_registro, rol_evento, usuario_id, evento_id)
+VALUES ('2025-09-15', 'organizador', 1, 7);
+INSERT INTO Participacion (fecha_registro, rol_evento, usuario_id, evento_id)
+VALUES ('2025-09-15', 'organizador', 1, 8);
+INSERT INTO Participacion (fecha_registro, rol_evento, usuario_id, evento_id)
+VALUES ('2025-09-15', 'organizador', 1, 9);
+INSERT INTO Participacion (fecha_registro, rol_evento, usuario_id, evento_id)
+VALUES ('2025-09-15', 'organizador', 1, 10);
 
 -- María participa como asistente en Tech Conference
 INSERT INTO Participacion (fecha_registro, rol_evento, usuario_id, evento_id)
 VALUES ('2025-09-20', 'asistente', 2, 1);
-
--- Admin supervisa como coorganizador del Concierto
-INSERT INTO Participacion (fecha_registro, rol_evento, usuario_id, evento_id)
-VALUES ('2025-09-22', 'coorganizador', 3, 2);
-
--- Juan invita a María al Taller
-INSERT INTO Invitacion (estado, mensaje, fecha_invitacion, organizador_id, invitado_id, evento_id)
-VALUES ('pendiente', 'Hola María, te invito a mi taller.', '2025-11-15 09:42:31', 1, 2, 3);
 
 
 -- María guarda el evento Concierto Rock Fest
@@ -266,7 +276,7 @@ VALUES (2, 2);
 
 -- Admin guarda Tech Conference
 INSERT INTO EventosGuardado (usuario_id, evento_id)
-VALUES (3, 1);
+VALUES (2, 1);
 
 
 -- María comenta en Tech Conference
@@ -276,39 +286,3 @@ VALUES ('¡Muy interesante el tema de innovación!', 10, 0, 2, 1);
 -- Juan comenta en Concierto Rock Fest
 INSERT INTO ComentarioEvento (mensaje, likes, dislikes, usuario_id, evento_id)
 VALUES ('Se viene con todo este concierto', 5, 1, 1, 2);
-
-
-INSERT INTO Notificacion (fecha_creacion, mensaje, visto, usuario_id, evento_id)
-VALUES
-('2025-11-15 20:10:00',
- 'Tu evento Tech Conference 2025 tiene un nuevo asistente.',
- FALSE,
- 1, 1),
-
-('2025-11-14 09:20:00',
- 'Recordatorio: el evento Hackathon Universitaria 2025 se acerca.',
- FALSE,
- 1, 1),
-
-('2025-11-13 14:05:00',
- 'Han comentado tu evento Hackathon Universitaria 2025.',
- FALSE,
- 1, 1);
-
-
-INSERT INTO Notificacion (fecha_creacion, mensaje, visto, usuario_id, evento_id)
-VALUES
-('2025-11-15 18:20:00',
- 'Recordatorio: se acerca el evento Rock Fest Lima que guardaste.',
- FALSE,
- 2, 2),
-
-('2025-11-15 09:42:31',
- 'Juan Pérez te ha enviado una invitación al evento Taller de Emprendimiento.',
- FALSE,
- 2, 3),
-
-('2025-11-10 11:10:00',
- 'El evento Tech Conference 2025 que asistirás ha actualizado sus detalles.',
- TRUE,
- 2, 1);
