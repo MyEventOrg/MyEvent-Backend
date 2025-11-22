@@ -70,7 +70,9 @@ class EventoController {
 
                     if (usuario) {
                         asistentesList.push({
+                            usuario_id: usuario.get("usuario_id"),
                             nombre: usuario.get("nombreCompleto"),
+                            apodo: usuario.get("apodo") || null,
                             correo: usuario.get("correo"),
                             url_imagen: usuario.get("url_imagen") || null,
                         });

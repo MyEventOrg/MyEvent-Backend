@@ -88,6 +88,7 @@ CREATE TABLE Notificacion (
     fecha_creacion DATETIME NOT NULL,
     mensaje    VARCHAR(200) NOT NULL,
     visto      BOOL NOT NULL DEFAULT FALSE,
+    tipo       ENUM('normal', 'invitacion') NOT NULL DEFAULT 'normal', -- -MODIFICACION: Distingue invitaciones
     usuario_id INT NOT NULL,
     evento_id  INT NOT NULL,
     FOREIGN KEY (usuario_id) REFERENCES Usuario(usuario_id),

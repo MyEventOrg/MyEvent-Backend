@@ -21,7 +21,8 @@ class NotificacionController {
                 });
             }
 
-            const notificaciones = await NotificacionDAO.findByUserOrdered(Number(usuario_id));
+            // JUAN-MODIFICACION: Usar método que filtra invitaciones ya respondidas
+            const notificaciones = await NotificacionDAO.findByUserOrderedConInvitacionesPendientes(Number(usuario_id));
 
             return res.json({
                 ok: true,

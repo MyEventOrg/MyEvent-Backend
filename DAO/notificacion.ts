@@ -4,6 +4,17 @@ import { Notificacion } from "../configs/models";
 const notificacionRepository = new BaseRepository<Notificacion>(Notificacion);
 
 class NotificacionDAO {
+
+        // Eliminar notificaciones antiguas de invitación para un usuario y evento
+        static async findInvitacionesByUsuarioYEvento(usuario_id: number, evento_id: number) {
+            return Notificacion.findAll({
+                where: {
+                    usuario_id,
+                    evento_id,
+                    tipo: 'invitacion'
+                }
+            });
+        }
     static async findAll() {
         return notificacionRepository.findAll();
     }
