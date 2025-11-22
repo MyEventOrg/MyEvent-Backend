@@ -8,4 +8,8 @@ module.exports = {
   transform: {
     ...tsJestTransformCfg,
   },
+
+  // 🟦 SOLUCIÓN PARA QUE JEST TERMINE LA EJECUCIÓN
+  forceExit: true,
+  detectOpenHandles: true,
 };
